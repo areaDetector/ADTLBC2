@@ -64,13 +64,19 @@ public:
                  -1, -1),
         acq_thread(*this, (std::string(portName) + "-acq").c_str(), epicsThreadGetStackSize(epicsThreadStackMedium), epicsThreadPriorityHigh)
     {
-        auto handle_tlbc2_err = [](ViStatus err) {
-            if (err != VI_SUCCESS)
-                throw std::runtime_error("failed tblc2 function");
+        auto handle_tlbc2_err = [this](ViStatus err, std::string function) {
+            if (err == VI_SUCCESS)
+                return;
+
+            ViChar ebuf[TLBC2_ERR_DESCR_BUFFER_SIZE];
+            TLBC2_error_message(instr, err, ebuf);
+            throw std::runtime_error("TBLC2: " + function +
+                                     ": " + std::string(ebuf) + "\n");
         };
 
         ViUInt32 device_count = 0;
-        handle_tlbc2_err(TLBC2_get_device_count(VI_NULL, &device_count));
+        handle_tlbc2_err(TLBC2_get_device_count(VI_NULL, &device_count),
+                         "get_device_count");
 
         if (device_count < 1)
             throw std::runtime_error("no available devices");
@@ -86,9 +92,9 @@ public:
             VI_NULL, /* model name */
             VI_NULL, /* serial number */
             &available,
-            resource_name));
+            resource_name), "get_device_information");
 
-        handle_tlbc2_err(TLBC2_init(resource_name, VI_TRUE, VI_TRUE, &instr));
+        handle_tlbc2_err(TLBC2_init(resource_name, VI_TRUE, VI_TRUE, &instr), "init");
 
         acq_thread.start();
     }
