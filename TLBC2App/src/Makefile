@@ -10,15 +10,18 @@ include $(TOP)/configure/CONFIG
 
 LIBRARY_IOC += TLBC2
 
-# xxxRecord.h will be created from xxxRecord.dbd
-#DBDINC += xxxRecord
 # install TLBC2.dbd into <top>/dbd
 DBD += TLBC2.dbd
 
 # specify all source files to be compiled and added to the library
-#TLBC2_SRCS += xxx
+TLBC2_SRCS += TLBC2.cpp
 
-TLBC2_LIBS += $(EPICS_BASE_IOC_LIBS)
+USR_INCLUDES += -I$(THORLABS_INC)
+
+TLBC2_64_DIR += $(THORLABS_LIB)
+TLBC2_DLL_LIBS += TLBC2_64
+
+include $(ADCORE)/ADApp/commonLibraryMakefile
 
 #===========================
 
