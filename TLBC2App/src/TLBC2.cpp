@@ -1,5 +1,7 @@
 #include <cstring>
 
+#include <iocsh.h>
+
 #include <ADDriver.h>
 
 #include <visa.h>
@@ -91,3 +93,25 @@ public:
         acq_thread.start();
     }
 };
+
+static const iocshArg arg0 = {"portName", iocshArgString};
+static const iocshArg arg1 = {"maxX", iocshArgInt};
+static const iocshArg arg2 = {"maxY", iocshArgInt};
+static const iocshArg arg3 = {"maxMemory", iocshArgInt};
+
+static const iocshArg *const args[] = {&arg0, &arg1, &arg2, &arg3};
+
+static const iocshFuncDef configTLBC2 = {"TLBC2Config", 4, args};
+static void configTLBC2CallFunc(const iocshArgBuf *args)
+{
+    new ADTLBC2(args[0].sval, args[1].ival, args[2].ival, args[3].ival);
+}
+
+static void TLBC2Register()
+{
+    iocshRegister(&configTLBC2, configTLBC2CallFunc);
+}
+
+extern "C" {
+    epicsExportRegistrar(TLBC2Register);
+}
