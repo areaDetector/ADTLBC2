@@ -8,15 +8,59 @@
 
 #include <epicsExport.h> // defines epicsExportSharedSymbols, do not move
 
-class epicsShareClass ADTLBC2: public ADDriver {
+class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     ViSession instr = TLBC2_INV_DEVICE_HANDLE;
+    TLBC1_Calculations scan_data;
+    ViUInt8 image_data[TLBC1_MAX_ROWS * TLBC1_MAX_COLUMNS * 2];
+
+    epicsEvent start_acquire_event;
+    epicsThread acq_thread;
+
+    asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value) override
+    {
+        const int function = pasynUser->reason;
+        if (function == ADAcquire && value == 1) {
+            start_acquire_event.trigger();
+        }
+
+        return ADDriver::writeInt32(pasynUser, value);
+    }
+
+    void run() override
+    {
+        while (1) {
+            start_acquire_event.wait();
+            auto err = TLBC2_get_scan_data(instr, &scan_data);
+            if (err != VI_SUCCESS || !scan_data.isValid)
+                continue;
+
+            ViUInt16 width, height;
+            ViUInt8 bpp;
+            err = TLBC2_get_image(instr, image_data, &width, &height, &bpp);
+            if (err != VI_SUCCESS)
+                continue;
+
+            size_t dims[] = {width, height};
+            /* TODO: should this be done under a lock? */
+            auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
+            memcpy(pImage->pData, image_data, width * height * bpp);
+
+            doCallbacksGenericPointer(pImage, NDArrayData, 0);
+
+            lock();
+            setIntegerParam(ADAcquire, 0);
+            callParamCallbacks();
+            unlock();
+        }
+    }
 
 public:
     ADTLBC2(const char *portName, int maxSizeX, int maxSizeY, int maxMemory):
         ADDriver(portName, 1, 0, 0, maxMemory,
                  0, 0,
                  ASYN_CANBLOCK, 1,
-                 -1, -1)
+                 -1, -1),
+        acq_thread(*this, (std::string(portName) + "-acq").c_str(), epicsThreadGetStackSize(epicsThreadStackMedium), epicsThreadPriorityHigh)
     {
         auto handle_tlbc2_err = [](ViStatus err) {
             if (err != VI_SUCCESS)
@@ -43,5 +87,7 @@ public:
             resource_name));
 
         handle_tlbc2_err(TLBC2_init(resource_name, VI_TRUE, VI_TRUE, &instr));
+
+        acq_thread.start();
     }
 };
