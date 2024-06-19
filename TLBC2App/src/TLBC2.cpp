@@ -56,6 +56,17 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         }
     }
 
+    void handle_tlbc2_err(ViStatus err, std::string function)
+    {
+        if (err == VI_SUCCESS)
+            return;
+
+        ViChar ebuf[TLBC2_ERR_DESCR_BUFFER_SIZE];
+        TLBC2_error_message(instr, err, ebuf);
+        throw std::runtime_error("TBLC2: " + function + ": " +
+                                 std::string(ebuf) + "\n");
+    };
+
 public:
     ADTLBC2(const char *portName, int maxSizeX, int maxSizeY, int maxMemory):
         ADDriver(portName, 1, 0, 0, maxMemory,
@@ -64,16 +75,6 @@ public:
                  -1, -1),
         acq_thread(*this, (std::string(portName) + "-acq").c_str(), epicsThreadGetStackSize(epicsThreadStackMedium), epicsThreadPriorityHigh)
     {
-        auto handle_tlbc2_err = [this](ViStatus err, std::string function) {
-            if (err == VI_SUCCESS)
-                return;
-
-            ViChar ebuf[TLBC2_ERR_DESCR_BUFFER_SIZE];
-            TLBC2_error_message(instr, err, ebuf);
-            throw std::runtime_error("TBLC2: " + function +
-                                     ": " + std::string(ebuf) + "\n");
-        };
-
         ViUInt32 device_count = 0;
         handle_tlbc2_err(TLBC2_get_device_count(VI_NULL, &device_count),
                          "get_device_count");
