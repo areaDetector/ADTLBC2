@@ -1,0 +1,22 @@
+# Database for the records specific to the ADTLBC2 driver
+# Macros:
+#% macro, P, Device Prefix
+#% macro, R, Device Suffix
+#% macro, PORT, Asyn Port name
+#% macro, TIMEOUT, Timeout, default 1
+#% macro, ADDR, Asyn Port address, default 0
+
+include "ADBase.template"
+
+record(ao, "$(P)$(R)AcquireTime") {
+    field(ASLO, "1e-3")
+    field(PREC, "6")
+    field(VAL, "0.1")
+    field(EGU, "second")
+}
+
+record(ai, "$(P)$(R)AcquireTime_RBV") {
+    field(ASLO, "1e-3")
+    field(PREC, "6")
+    field(EGU, "second")
+}

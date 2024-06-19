@@ -28,6 +28,32 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         return ADDriver::writeInt32(pasynUser, value);
     }
 
+    asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value) override
+    {
+        const int function = pasynUser->reason;
+        ViReal64 readback;
+
+        try {
+            if (function == ADAcquireTime) {
+                handle_tlbc2_err(TLBC2_set_exposure_time(instr, (ViReal64)value),
+                                 "TBLC2_set_exposure_time");
+                handle_tlbc2_err(TLBC2_get_exposure_time(instr, &readback),
+                                 "TBLC2_get_exposure_time");
+
+                setDoubleParam(ADAcquireTime, (epicsFloat64)readback);
+
+                callParamCallbacks();
+                return asynSuccess;
+            }
+
+            return ADDriver::writeFloat64(pasynUser, value);
+        } catch (const std::runtime_error &err) {
+            asynPrint(pasynUser, ASYN_TRACE_ERROR, err.what());
+
+            return asynError;
+        }
+    }
+
     void run() override
     {
         while (1) {
