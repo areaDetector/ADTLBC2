@@ -46,6 +46,25 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 return asynSuccess;
             }
 
+            if (function == ADGain) {
+                ViReal64 min, max, readback;
+
+                /* TODO: fill this in DRVL and DRVH instead */
+                handle_tlbc2_err(TLBC2_get_gain_range(instr, &min, &max), "get_gain_range");
+
+                if (value < min || value > max)
+                    return asynError;
+
+                handle_tlbc2_err(TLBC2_set_gain(instr, (ViReal64)value),
+                                 "set_gain");
+                handle_tlbc2_err(TLBC2_get_gain(instr, &readback), "get_gain");
+
+                setDoubleParam(ADGain, (epicsFloat64)readback);
+
+                callParamCallbacks();
+                return asynSuccess;
+            }
+
             return ADDriver::writeFloat64(pasynUser, value);
         } catch (const std::runtime_error &err) {
             asynPrint(pasynUser, ASYN_TRACE_ERROR, err.what());
