@@ -12,7 +12,7 @@ epicsEnvSet("PORT", "TLBC2")
 # The search path for database files
 epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db;$(ADTLBC2)/db")
 
-TLBC2Config("$(PORT)", 4096, 3000, 0)
+TLBC2Config("$(PORT)", 4096, 3000, 0, 0)
 dbLoadRecords("ADTLBC2.template", "P=$(PREFIX), R=cam1:, PORT=$(PORT), ADDR=0, TIMEOUT=1")
 
 NDStdArraysConfigure("Image1", 20, 0, "$(PORT)", 0, 0, 0, 0, 0, 5)

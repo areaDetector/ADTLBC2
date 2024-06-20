@@ -94,7 +94,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     };
 
 public:
-    ADTLBC2(const char *portName, int maxSizeX, int maxSizeY, int maxMemory):
+    ADTLBC2(const char *portName, int maxSizeX, int maxSizeY, int maxMemory, int reset):
         ADDriver(portName, 1, 0, 0, maxMemory,
                  0, 0,
                  ASYN_CANBLOCK, 1,
@@ -121,7 +121,11 @@ public:
             &available,
             resource_name), "get_device_information");
 
-        handle_tlbc2_err(TLBC2_init(resource_name, VI_TRUE, VI_TRUE, &instr), "init");
+        handle_tlbc2_err(TLBC2_init(
+            resource_name,
+            VI_TRUE, /* identification query */
+            reset ? VI_TRUE : VI_FALSE, /* reset device */
+            &instr), "init");
 
         acq_thread.start();
     }
@@ -131,13 +135,14 @@ static const iocshArg arg0 = {"portName", iocshArgString};
 static const iocshArg arg1 = {"maxX", iocshArgInt};
 static const iocshArg arg2 = {"maxY", iocshArgInt};
 static const iocshArg arg3 = {"maxMemory", iocshArgInt};
+static const iocshArg arg4 = {"reset", iocshArgInt};
 
-static const iocshArg *const args[] = {&arg0, &arg1, &arg2, &arg3};
+static const iocshArg *const args[] = {&arg0, &arg1, &arg2, &arg3, &arg4};
 
-static const iocshFuncDef configTLBC2 = {"TLBC2Config", 4, args};
+static const iocshFuncDef configTLBC2 = {"TLBC2Config", 5, args};
 static void configTLBC2CallFunc(const iocshArgBuf *args)
 {
-    new ADTLBC2(args[0].sval, args[1].ival, args[2].ival, args[3].ival);
+    new ADTLBC2(args[0].sval, args[1].ival, args[2].ival, args[3].ival, args[4].ival);
 }
 
 static void TLBC2Register()
