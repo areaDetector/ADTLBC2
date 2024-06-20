@@ -1,4 +1,7 @@
 #include <cstring>
+#include <functional>
+#include <string>
+#include <unordered_map>
 
 #include <iocsh.h>
 
@@ -10,6 +13,46 @@
 
 #include <epicsExport.h> // defines epicsExportSharedSymbols, do not move
 
+template<typename T>
+class Parameter {
+    std::function<ViStatus(ViSession, T*)> getter;
+    std::function<ViStatus(ViSession, T)> setter;
+    std::function<ViStatus(ViSession, T*, T*)> range_getter;
+
+public:
+    const std::string name;
+
+    Parameter(const std::string name,
+              std::function<ViStatus(ViSession, T*)> getter,
+              std::function<ViStatus(ViSession, T)> setter,
+              std::function<ViStatus(ViSession, T*, T*)> range_getter = {})
+        : name(name), getter(getter), setter(setter), range_getter(range_getter) {}
+
+    ViStatus get(ViSession instr, T& value)
+    {
+        return getter(instr, &value);
+    }
+
+    ViStatus set(ViSession instr, T value)
+    {
+        T min, max;
+
+        if (range_getter) {
+            ViStatus status = range_getter(instr, &min, &max);
+            if (status != VI_SUCCESS)
+                return status;
+
+            /* TODO: handle this with DRVL and DRVH instead */
+            if (value < min || value > max)
+                throw std::range_error("value ouside range [" +
+                                       std::to_string(min) + ", " +
+                                       std::to_string(max) + "]");
+        }
+
+        return setter(instr, value);
+    }
+};
+
 class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     ViSession instr = TLBC2_INV_DEVICE_HANDLE;
     TLBC1_Calculations scan_data;
@@ -17,6 +60,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     epicsEvent start_acquire_event;
     epicsThread acq_thread;
+
+    const std::unordered_map<int, Parameter<ViReal64>> params;
 
     asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value) override
     {
@@ -34,32 +79,15 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         ViReal64 readback;
 
         try {
-            if (function == ADAcquireTime) {
-                handle_tlbc2_err(TLBC2_set_exposure_time(instr, (ViReal64)value),
-                                 "TBLC2_set_exposure_time");
-                handle_tlbc2_err(TLBC2_get_exposure_time(instr, &readback),
-                                 "TBLC2_get_exposure_time");
+            auto item = params.find(function);
 
-                setDoubleParam(ADAcquireTime, (epicsFloat64)readback);
+            if (item != params.end()) {
+                auto param = item->second;
 
-                callParamCallbacks();
-                return asynSuccess;
-            }
+                handle_tlbc2_err(param.set(instr, (ViReal64)value), "set_" + param.name);
+                handle_tlbc2_err(param.get(instr, readback), "get_" + param.name);
 
-            if (function == ADGain) {
-                ViReal64 min, max, readback;
-
-                /* TODO: fill this in DRVL and DRVH instead */
-                handle_tlbc2_err(TLBC2_get_gain_range(instr, &min, &max), "get_gain_range");
-
-                if (value < min || value > max)
-                    return asynError;
-
-                handle_tlbc2_err(TLBC2_set_gain(instr, (ViReal64)value),
-                                 "set_gain");
-                handle_tlbc2_err(TLBC2_get_gain(instr, &readback), "get_gain");
-
-                setDoubleParam(ADGain, (epicsFloat64)readback);
+                setDoubleParam(function, (epicsFloat64)readback);
 
                 callParamCallbacks();
                 return asynSuccess;
@@ -118,7 +146,11 @@ public:
                  0, 0,
                  ASYN_CANBLOCK, 1,
                  -1, -1),
-        acq_thread(*this, (std::string(portName) + "-acq").c_str(), epicsThreadGetStackSize(epicsThreadStackMedium), epicsThreadPriorityHigh)
+        acq_thread(*this, (std::string(portName) + "-acq").c_str(), epicsThreadGetStackSize(epicsThreadStackMedium), epicsThreadPriorityHigh),
+        params({
+            {ADAcquireTime, {"exposure_time", TLBC2_get_exposure_time, TLBC2_set_exposure_time, TLBC2_get_exposure_time_range}},
+            {ADGain, {"gain", TLBC2_get_gain, TLBC2_set_gain, TLBC2_get_gain_range}},
+        })
     {
         ViUInt32 device_count = 0;
         handle_tlbc2_err(TLBC2_get_device_count(VI_NULL, &device_count),
