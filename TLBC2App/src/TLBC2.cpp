@@ -1,6 +1,7 @@
 #include <cstring>
 #include <functional>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 #include <iocsh.h>
@@ -12,6 +13,10 @@
 #include <TLBC1_Calculations.h>
 
 #include <epicsExport.h> // defines epicsExportSharedSymbols, do not move
+
+static_assert(std::is_same_v<ViUInt16, epicsUInt16>);
+static_assert(std::is_same_v<ViReal32, epicsFloat32>);
+static_assert(std::is_same_v<ViReal64, epicsFloat64>);
 
 template<typename T>
 class Parameter {
@@ -130,6 +135,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
             memcpy(pImage->pData, image_data, width * height * bpp);
 
+            addAttributesFromScan(pImage, scan_data);
+
             doCallbacksGenericPointer(pImage, NDArrayData, 0);
 
             lock();
@@ -149,6 +156,149 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         throw std::runtime_error("TBLC2: " + function + ": " +
                                  std::string(ebuf) + "\n");
     };
+
+    void addAttributesFromScan(NDArray* image, TLBC1_Calculations &data) {
+        getAttributes(image->pAttributeList);
+        auto list = image->pAttributeList;
+
+        list->add("BaseLevel", "Mean noise of the sensor", NDAttrFloat64,
+                  &data.baseLevel);
+        list->add("LightShieldedPixelMeanIntensity",
+                  "Mean intensity of the light shielded pixels", NDAttrFloat64,
+                  &data.lightShieldedPixelMeanIntensity);
+        list->add("PeakPositionX", "Peak x pixel position", NDAttrUInt16,
+                  &data.peakPositionX);
+        list->add("PeakPositionY", "Peak y pixel position", NDAttrUInt16,
+                  &data.peakPositionY);
+        list->add("CentroidPositionX", "Centroid x pixel position",
+                  NDAttrFloat32, &data.centroidPositionX);
+        list->add("CentroidPositionY", "Centroid y pixel position",
+                  NDAttrFloat32, &data.centroidPositionY);
+
+        list->add("BeamWidthIsoX", "Beam width in X axis (ISO 11146-2)",
+                  NDAttrFloat64, &data.beamWidthIsoX);
+        list->add("BeamWidthIsoY", "Beam width in Y axis (ISO 11146-2)",
+                  NDAttrFloat64, &data.beamWidthIsoY);
+        list->add("BeamWidthIsoXSimple",
+                  "Beam width in X axis for round profiles with "
+                  "ellipticity > 87% (ISO 11146-2)",
+                  NDAttrFloat64, &data.beamWidthIsoXSimple);
+        list->add("BeamWidthIsoYSimple",
+                  "Beam width in Y axis for round profiles with "
+                  "ellipticity > 87% (ISO 11146-2)",
+                  NDAttrFloat64, &data.beamWidthIsoYSimple);
+        list->add("BeamWidthClipX",
+                  "Horizontal beam width at clip level in pixel", NDAttrFloat32,
+                  &data.beamWidthClipX);
+        list->add("BeamWidthClipY",
+                  "Vertical beam width at clip level in pixel", NDAttrFloat32,
+                  &data.beamWidthClipY);
+        list->add("EllipticityIso",
+                  "Ellipticity of the beam width (ISO 11146-2)", NDAttrFloat64,
+                  &data.ellipticityIso);
+        list->add("AzimuthAngle",
+                  "Azimuth angle measured clockwise (ISO 11146-2)",
+                  NDAttrFloat64, &data.azimuthAngle);
+
+        list->add("EllipseDiameterMin",
+                  "Ellipse minor axis diameter in [pixel]", NDAttrFloat32,
+                  &data.ellipseDiaMin);
+        list->add("EllipseDiameterMax",
+                  "Ellipse major axis diameter in [pixel]", NDAttrFloat32,
+                  &data.ellipseDiaMax);
+        list->add("EllipseDiameterMean",
+                  "Ellipse diameter arithmetic mean value in [pixel]",
+                  NDAttrFloat32, &data.ellipseDiaMean);
+        list->add("EllipseOrientation", "Ellipse orientation angle in degree.",
+                  NDAttrFloat32, &data.ellipseOrientation);
+        list->add("EllipseEllipticity",
+                  "Ellipse's ratio of minor to major axis diameter",
+                  NDAttrFloat32, &data.ellipseEllipticity);
+        list->add("EllipseEccentricity", "Ellipse's eccentricity",
+                  NDAttrFloat32, &data.ellipseEccentricity);
+        list->add("EllipseCenterX", "Ellipse center x pixel position",
+                  NDAttrFloat32, &data.ellipseCenterX);
+        list->add("EllipseCenterY", "Ellipse center y pixel position",
+                  NDAttrFloat32, &data.ellipseCenterY);
+        list->add("EllipseFitAmplitude",
+                  "Ellipse amplitude in Fourier fit (in pixel)", NDAttrFloat32,
+                  &data.ellipseFitAmplitude);
+        list->add("EllipseRotAngleX", "Ellipse rotation angle in x",
+                  NDAttrFloat32, &data.rotAngleEllipseX);
+        list->add("EllipseRotAngleY", "Ellipse rotation angle in y",
+                  NDAttrFloat32, &data.rotAngleEllipseY);
+        list->add("EllipseWidthIsoX", "Ellipse width in x", NDAttrFloat32,
+                  &data.ellipseWidthIsoX);
+        list->add("EllipseWidthIsoY", "Ellipse width in y", NDAttrFloat32,
+                  &data.ellipseWidthIsoY);
+
+        list->add("TotalPower", "Total power in dBm", NDAttrFloat32,
+                  &data.totalPower);
+        list->add("PeakPowerDensity", "Peak power density in mW/um^2",
+                  NDAttrFloat32, &data.peakPowerDensity);
+
+        list->add("GaussianFitCentroidPositionX",
+                  "Centroid x pixel position for the gaussian profile",
+                  NDAttrFloat32, &data.gaussianFitCentroidPositionX);
+        list->add("GaussianFitCentroidPositionY",
+                  "Centroid y pixel position for the gaussian profile",
+                  NDAttrFloat32, &data.gaussianFitCentroidPositionY);
+        list->add("GaussianFitRatingX",
+                  "Ratio of actual data to the gaussian fit of the x profile",
+                  NDAttrFloat32, &data.gaussianFitRatingX);
+        list->add("GaussianFitRatingY",
+                  "Ratio of actual data to the gaussian fit of the y profile",
+                  NDAttrFloat32, &data.gaussianFitRatingY);
+        list->add("GaussianFitDiameterX", "Diameter for the profile X centroid",
+                  NDAttrFloat32, &data.gaussianFitDiameterX);
+        list->add("GaussianFitDiameterY", "Diameter for the profile Y centroid",
+                  NDAttrFloat32, &data.gaussianFitDiameterY);
+
+        list->add("CalcAreaCenterX", "Calculation area left border",
+                  NDAttrFloat32, &data.calcAreaCenterX);
+        list->add("CalcAreaCenterY", "Calculation area right border",
+                  NDAttrFloat32, &data.calcAreaCenterY);
+        list->add("CalcAreaWidth", "Calculation area width", NDAttrFloat32,
+                  &data.calcAreaWidth);
+        list->add("CalcAreaHeight", "Calculation area height", NDAttrFloat32,
+                  &data.calcAreaHeight);
+        list->add("CalcAreaAngle",
+                  "Calculation area angle in degree (counterclock)",
+                  NDAttrFloat64, &data.calcAreaAngle);
+        list->add("CalcAreaLineOffset",
+                  "Pixel inside the calculation area per line", NDAttrFloat64,
+                  &data.calcAreaLineOffset);
+
+        list->add("ProfilePeakValueX",
+                  "Peak intensity value in the x profile (in calc area)",
+                  NDAttrFloat32, &data.profilePeakValueX);
+        list->add("ProfilePeakValueY",
+                  "Peak intensity value in the y profile (in calc area)",
+                  NDAttrFloat32, &data.profilePeakValueY);
+        list->add(
+            "ProfilePeakPosX",
+            "Intensity profile peak intensity x pixel position (in calc area)",
+            NDAttrUInt16, &data.profilePeakPosX);
+        list->add(
+            "ProfilePeakPosY",
+            "Intensity profile peak intensity y pixel position (in calc area)",
+            NDAttrUInt16, &data.profilePeakPosY);
+
+        list->add(
+            "EffectiveArea",
+            "Area of an ideal flat top beam with same peak intensity in um^2",
+            NDAttrFloat64, &data.effectiveArea);
+        list->add("EffectiveBeamDiameter", "Effective beam diameter",
+                  NDAttrFloat64, &data.effectiveBeamDiameter);
+
+        list->add("Temperature", "Temperature", NDAttrFloat64,
+                  &data.temperature);
+
+        list->add("BesselFitRatingX", "Bessel fit rating in x profile",
+                  NDAttrFloat32, &data.besselFitRatingX);
+        list->add("BesselFitRatingY", "Bessel fit rating in y profile",
+                  NDAttrFloat32, &data.besselFitRatingY);
+    }
 
 public:
     ADTLBC2(const char *portName, int maxSizeX, int maxSizeY, int maxMemory, int reset):
