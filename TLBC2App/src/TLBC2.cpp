@@ -82,15 +82,25 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             auto item = params.find(function);
 
             if (item != params.end()) {
+                asynStatus status = asynSuccess;
                 auto param = item->second;
 
-                handle_tlbc2_err(param.set(instr, (ViReal64)value), "set_" + param.name);
+                try {
+                    handle_tlbc2_err(param.set(instr, (ViReal64)value), "set_" + param.name);
+                } catch (const std::runtime_error &err) {
+                    // when failing to set, we still need to readback, so just
+                    // report this and keep going
+                    asynPrint(pasynUser, ASYN_TRACE_ERROR, err.what());
+
+                    status = asynError;
+                }
+
                 handle_tlbc2_err(param.get(instr, readback), "get_" + param.name);
 
                 setDoubleParam(function, (epicsFloat64)readback);
 
                 callParamCallbacks();
-                return asynSuccess;
+                return status;
             }
 
             return ADDriver::writeFloat64(pasynUser, value);
