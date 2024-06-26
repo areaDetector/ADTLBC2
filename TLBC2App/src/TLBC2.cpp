@@ -66,12 +66,47 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     epicsEvent start_acquire_event;
     epicsThread acq_thread;
 
-    const std::unordered_map<int, Parameter<ViReal64>> params;
+    const std::unordered_map<int, Parameter<ViReal64>> real_params;
+    std::unordered_map<int, Parameter<ViBoolean>> bool_params;
+
+    int BCAutoExposure;
+
+    template<typename T, typename V>
+    asynStatus writeParam(asynUser *user, Parameter<V> &param, T value, V &readback) {
+        asynStatus status = asynSuccess;
+
+        try {
+            handle_tlbc2_err(param.set(instr, value), "set_" + param.name);
+        } catch (const std::runtime_error &err) {
+            // when failing to set, we still need to readback, so just
+            // report this and keep going
+            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+
+            status = asynError;
+        }
+
+        handle_tlbc2_err(param.get(instr, readback), "get_" + param.name);
+
+        return status;
+    }
 
     asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value) override
     {
         const int function = pasynUser->reason;
-        if (function == ADAcquire && value == 1) {
+
+        auto item = bool_params.find(function);
+
+        if (item != bool_params.end()) {
+            auto param = item->second;
+            ViBoolean readback;
+
+            asynStatus status =
+                writeParam<epicsInt32, ViBoolean>(pasynUser, param, value, readback);
+
+            setIntegerParam(function, readback);
+            callParamCallbacks();
+            return status;
+        } else if (function == ADAcquire && value == 1) {
             start_acquire_event.trigger();
         }
 
@@ -84,25 +119,18 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         ViReal64 readback;
 
         try {
-            auto item = params.find(function);
+            auto item = real_params.find(function);
 
-            if (item != params.end()) {
-                asynStatus status = asynSuccess;
+            if (item != real_params.end()) {
                 auto param = item->second;
 
-                try {
-                    handle_tlbc2_err(param.set(instr, (ViReal64)value), "set_" + param.name);
-                } catch (const std::runtime_error &err) {
-                    // when failing to set, we still need to readback, so just
-                    // report this and keep going
-                    asynPrint(pasynUser, ASYN_TRACE_ERROR, err.what());
+                asynStatus status =
+                    writeParam<epicsFloat64, ViReal64>(pasynUser, param, value, readback);
 
-                    status = asynError;
-                }
+                setDoubleParam(function, readback);
 
-                handle_tlbc2_err(param.get(instr, readback), "get_" + param.name);
-
-                setDoubleParam(function, (epicsFloat64)readback);
+                if (function == ADAcquireTime)
+                    setIntegerParam(BCAutoExposure, 0);
 
                 callParamCallbacks();
                 return status;
@@ -141,6 +169,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
             lock();
             setIntegerParam(ADAcquire, 0);
+            readAcquireTime();
             callParamCallbacks();
             unlock();
         }
@@ -156,6 +185,32 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         throw std::runtime_error("TBLC2: " + function + ": " +
                                  std::string(ebuf) + "\n");
     };
+
+    void createParameters() {
+        createParam("AUTO_EXPOSURE", asynParamInt32, &BCAutoExposure);
+        bool_params.insert({BCAutoExposure,
+                            {"auto_exposure", TLBC2_get_auto_exposure,
+                             TLBC2_set_auto_exposure}});
+    }
+
+    void readAcquireTime() {
+        int auto_exposure;
+        getIntegerParam(BCAutoExposure, &auto_exposure);
+
+        if (auto_exposure) {
+            try {
+                ViReal64 exposure_time;
+                auto param = real_params.find(ADAcquireTime)->second;
+
+                handle_tlbc2_err(param.get(instr, exposure_time),
+                                 "get_" + param.name);
+
+                setDoubleParam(ADAcquireTime, exposure_time);
+            } catch (const std::runtime_error &err) {
+                asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, err.what());
+            }
+        }
+    }
 
     void addAttributesFromScan(NDArray* image, TLBC1_Calculations &data) {
         getAttributes(image->pAttributeList);
@@ -307,7 +362,7 @@ public:
                  ASYN_CANBLOCK, 1,
                  -1, -1),
         acq_thread(*this, (std::string(portName) + "-acq").c_str(), epicsThreadGetStackSize(epicsThreadStackMedium), epicsThreadPriorityHigh),
-        params({
+        real_params({
             {ADAcquireTime, {"exposure_time", TLBC2_get_exposure_time, TLBC2_set_exposure_time, TLBC2_get_exposure_time_range}},
             {ADGain, {"gain", TLBC2_get_gain, TLBC2_set_gain, TLBC2_get_gain_range}},
         })
@@ -337,6 +392,8 @@ public:
             VI_TRUE, /* identification query */
             reset ? VI_TRUE : VI_FALSE, /* reset device */
             &instr), "init");
+
+        createParameters();
 
         acq_thread.start();
     }

@@ -20,3 +20,22 @@ record(ai, "$(P)$(R)AcquireTime_RBV") {
     field(PREC, "6")
     field(EGU, "second")
 }
+
+record(bo, "$(P)$(R)AutoExposure") {
+    field(DESC, "Use latest data auto set exposure")
+    field(DTYP, "asynInt32")
+    field(ZNAM, "No")
+    field(ONAM, "Yes")
+    field(VAL, "0")
+    field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AUTO_EXPOSURE")
+    field(PINI, "YES")
+}
+
+record(bi, "$(P)$(R)AutoExposure_RBV") {
+    field(DESC, "Get auto exposure mode")
+    field(DTYP, "asynInt32")
+    field(ZNAM, "No")
+    field(ONAM, "Yes")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AUTO_EXPOSURE")
+    field(SCAN, "I/O Intr")
+}
