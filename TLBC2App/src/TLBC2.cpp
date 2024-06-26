@@ -3,6 +3,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <variant>
 
 #include <iocsh.h>
 
@@ -17,6 +18,25 @@
 static_assert(std::is_same_v<ViUInt16, epicsUInt16>);
 static_assert(std::is_same_v<ViReal32, epicsFloat32>);
 static_assert(std::is_same_v<ViReal64, epicsFloat64>);
+
+template<typename T, typename V>
+std::function<ViStatus(ViSession, T*)> create_getter_wrapper(std::function<ViStatus(ViSession, V*)> getter)
+{
+    return [getter](ViSession session, T *value) {
+        V tmp = 0;
+        auto rv = getter(session, &tmp);
+        *value = tmp;
+        return rv;
+    };
+}
+
+template<typename T, typename V>
+std::function<ViStatus(ViSession, T)> create_setter_wrapper(std::function<ViStatus(ViSession, V)> setter)
+{
+    return [setter](ViSession session, T value) {
+        return setter(session, (V)value);
+    };
+}
 
 template<typename T>
 class Parameter {
@@ -66,13 +86,12 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     epicsEvent start_acquire_event;
     epicsThread acq_thread;
 
-    const std::unordered_map<int, Parameter<ViReal64>> real_params;
-    std::unordered_map<int, Parameter<ViBoolean>> bool_params;
+    std::unordered_map<int, std::variant<Parameter<ViInt32>, Parameter<ViReal64>>> params;
 
     int BCAutoExposure;
 
-    template<typename T, typename V>
-    asynStatus writeParam(asynUser *user, Parameter<V> &param, T value, V &readback) {
+    template<typename T>
+    asynStatus writeParam(asynUser *user, Parameter<T> &param, T value, T &readback) {
         asynStatus status = asynSuccess;
 
         try {
@@ -94,14 +113,14 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     {
         const int function = pasynUser->reason;
 
-        auto item = bool_params.find(function);
+        auto item = params.find(function);
 
-        if (item != bool_params.end()) {
-            auto param = item->second;
-            ViBoolean readback;
+        if (item != params.end()) {
+            auto param = std::get<Parameter<ViInt32>>(item->second);
+            ViInt32 readback;
 
             asynStatus status =
-                writeParam<epicsInt32, ViBoolean>(pasynUser, param, value, readback);
+                writeParam<ViInt32>(pasynUser, param, value, readback);
 
             setIntegerParam(function, readback);
             callParamCallbacks();
@@ -119,13 +138,13 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         ViReal64 readback;
 
         try {
-            auto item = real_params.find(function);
+            auto item = params.find(function);
 
-            if (item != real_params.end()) {
-                auto param = item->second;
+            if (item != params.end()) {
+                auto param = std::get<Parameter<ViReal64>>(item->second);
 
                 asynStatus status =
-                    writeParam<epicsFloat64, ViReal64>(pasynUser, param, value, readback);
+                    writeParam<ViReal64>(pasynUser, param, value, readback);
 
                 setDoubleParam(function, readback);
 
@@ -188,9 +207,15 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     void createParameters() {
         createParam("AUTO_EXPOSURE", asynParamInt32, &BCAutoExposure);
-        bool_params.insert({BCAutoExposure,
-                            {"auto_exposure", TLBC2_get_auto_exposure,
-                             TLBC2_set_auto_exposure}});
+
+        auto auto_exposure_getter =
+            create_getter_wrapper<ViInt32, ViBoolean>(TLBC2_get_auto_exposure);
+        auto auto_exposure_setter =
+            create_setter_wrapper<ViInt32, ViBoolean>(TLBC2_set_auto_exposure);
+        auto auto_exposure_param = Parameter<ViInt32>(
+            "auto_exposure", auto_exposure_getter, auto_exposure_setter);
+
+        params.insert({BCAutoExposure, auto_exposure_param});
     }
 
     void readAcquireTime() {
@@ -200,7 +225,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         if (auto_exposure) {
             try {
                 ViReal64 exposure_time;
-                auto param = real_params.find(ADAcquireTime)->second;
+                auto param = std::get<Parameter<ViReal64>>(
+                    params.find(ADAcquireTime)->second);
 
                 handle_tlbc2_err(param.get(instr, exposure_time),
                                  "get_" + param.name);
@@ -362,9 +388,9 @@ public:
                  ASYN_CANBLOCK, 1,
                  -1, -1),
         acq_thread(*this, (std::string(portName) + "-acq").c_str(), epicsThreadGetStackSize(epicsThreadStackMedium), epicsThreadPriorityHigh),
-        real_params({
-            {ADAcquireTime, {"exposure_time", TLBC2_get_exposure_time, TLBC2_set_exposure_time, TLBC2_get_exposure_time_range}},
-            {ADGain, {"gain", TLBC2_get_gain, TLBC2_set_gain, TLBC2_get_gain_range}},
+        params({
+            {ADAcquireTime, Parameter<ViReal64>("exposure_time", TLBC2_get_exposure_time, TLBC2_set_exposure_time, TLBC2_get_exposure_time_range)},
+            {ADGain, Parameter<ViReal64>("gain", TLBC2_get_gain, TLBC2_set_gain, TLBC2_get_gain_range)},
         })
     {
         ViUInt32 device_count = 0;

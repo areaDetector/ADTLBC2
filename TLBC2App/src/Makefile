@@ -16,6 +16,7 @@ DBD += TLBC2.dbd
 # specify all source files to be compiled and added to the library
 TLBC2_SRCS += TLBC2.cpp
 
+USR_CXXFLAGS += -std:c++17
 USR_INCLUDES += -I$(THORLABS_INC)
 
 TLBC2_64_DIR += $(THORLABS_LIB)
