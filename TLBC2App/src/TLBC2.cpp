@@ -156,10 +156,33 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             miny = value;
 
         try {
+            ViBoolean automatic;
+            ViUInt8 form;
+            epicsInt32 maxSizeX, maxSizeY;
+
+            getIntegerParam(ADMaxSizeX, &maxSizeX);
+            getIntegerParam(ADMaxSizeY, &maxSizeY);
+
+            handle_tlbc2_err(
+                TLBC2_get_calculation_area_mode(instr, &automatic, &form),
+                "get_calculation_area_mode");
+
+            handle_tlbc2_err(TLBC2_set_calculation_area_mode(instr, VI_ON, 0),
+                             "set_calculation_area_mode");
+
+            handle_tlbc2_err(
+                TLBC2_set_user_calculation_area(instr, 0, 0, maxSizeX, maxSizeY, 0),
+                "set_user_calculation_area");
+
             handle_tlbc2_err(TLBC2_set_roi(instr, (ViUInt16)minx,
                                            (ViUInt16)miny, (ViUInt16)sizex,
                                            (ViUInt16)sizey),
                              "set_roi");
+
+            handle_tlbc2_err(
+                TLBC2_set_calculation_area_mode(instr, automatic, form),
+                "set_calculation_area_mode");
+
         } catch (const std::runtime_error &err) {
             asynPrint(user, ASYN_TRACE_ERROR, err.what());
 
@@ -475,6 +498,9 @@ public:
             &instr), "init");
 
         createParameters();
+
+        setIntegerParam(ADMaxSizeX, maxSizeX);
+        setIntegerParam(ADMaxSizeY, maxSizeY);
 
         acq_thread.start();
     }
