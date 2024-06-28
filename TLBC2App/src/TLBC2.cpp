@@ -1,5 +1,6 @@
 #include <cstring>
 #include <functional>
+#include <iostream>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -107,6 +108,18 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         handle_tlbc2_err(param.get(instr, readback), "get_" + param.name);
 
         return status;
+    }
+
+    template<typename T>
+    void readbackParam(const int asyn_param, Parameter<T> &param) {
+        T readback;
+
+        handle_tlbc2_err(param.get(instr, readback), "get_" + param.name);
+        if constexpr (std::is_same_v<T, ViInt32>) {
+            setIntegerParam(asyn_param, readback);
+        } else {
+            setDoubleParam(asyn_param, readback);
+        }
     }
 
     asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value) override
@@ -294,6 +307,35 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             "auto_exposure", auto_exposure_getter, auto_exposure_setter);
 
         params.insert({BCAutoExposure, auto_exposure_param});
+    }
+
+    void readParameters() {
+        for (auto &[id, param] : params) {
+            try {
+                if (std::holds_alternative<Parameter<ViInt32>>(param))
+                    readbackParam<ViInt32>(id, std::get<Parameter<ViInt32>>(param));
+                else
+                    readbackParam<ViReal64>(id, std::get<Parameter<ViReal64>>(param));
+            } catch (std::runtime_error &err) {
+                std::cerr << err.what() << std::endl;
+            }
+        }
+
+        try {
+            ViUInt16 left, top, width, height;
+
+            handle_tlbc2_err(TLBC2_get_roi(instr, &left, &top, &width, &height),
+                             "get_roi");
+
+            setIntegerParam(ADMinX, left);
+            setIntegerParam(ADMinY, top);
+            setIntegerParam(ADSizeX, width);
+            setIntegerParam(ADSizeY, height);
+        } catch (const std::runtime_error &err) {
+            std::cerr << err.what() << std::endl;
+        }
+
+        callParamCallbacks();
     }
 
     void readAcquireTime() {
@@ -501,6 +543,7 @@ public:
 
         setIntegerParam(ADMaxSizeX, maxSizeX);
         setIntegerParam(ADMaxSizeY, maxSizeY);
+        readParameters();
 
         acq_thread.start();
     }
