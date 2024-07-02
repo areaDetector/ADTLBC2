@@ -21,6 +21,22 @@ record(ai, "$(P)$(R)AcquireTime_RBV") {
     field(EGU, "second")
 }
 
+record(longout, "$(P)$(R)MinX") {
+    field(PINI, "NO")
+}
+
+record(longout, "$(P)$(R)MinX") {
+    field(PINI, "NO")
+}
+
+record(longout, "$(P)$(R)SizeX") {
+    field(PINI, "NO")
+}
+
+record(longout, "$(P)$(R)SizeY") {
+    field(PINI, "NO")
+}
+
 record(bo, "$(P)$(R)AutoExposure") {
     field(DESC, "Use latest data auto set exposure")
     field(DTYP, "asynInt32")

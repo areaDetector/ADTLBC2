@@ -127,9 +127,64 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             return status;
         } else if (function == ADAcquire && value == 1) {
             start_acquire_event.trigger();
+        } else if (function == ADSizeX || function == ADSizeY ||
+                   function == ADMinX || function == ADMinY) {
+            return writeROI(pasynUser, value);
         }
 
         return ADDriver::writeInt32(pasynUser, value);
+    }
+
+    asynStatus writeROI(asynUser *user, int value)
+    {
+        int sizex, sizey, minx, miny;
+        asynStatus status = asynSuccess;
+        const int param = user->reason;
+
+        getIntegerParam(ADSizeX, &sizex);
+        getIntegerParam(ADSizeY, &sizey);
+        getIntegerParam(ADMinX, &minx);
+        getIntegerParam(ADMinY, &miny);
+
+        if (param == ADSizeX)
+            sizex = value;
+        else if (param == ADSizeY)
+            sizey = value;
+        else if (param == ADMinX)
+            minx = value;
+        else if (param == ADMinY)
+            miny = value;
+
+        try {
+            handle_tlbc2_err(TLBC2_set_roi(instr, (ViUInt16)minx,
+                                           (ViUInt16)miny, (ViUInt16)sizex,
+                                           (ViUInt16)sizey),
+                             "set_roi");
+        } catch (const std::runtime_error &err) {
+            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+
+            status = asynError;
+        }
+
+        try {
+            ViUInt16 left, top, width, height;
+
+            handle_tlbc2_err(TLBC2_get_roi(instr, &left, &top, &width, &height),
+                             "get_roi");
+
+            setIntegerParam(ADMinX, left);
+            setIntegerParam(ADMinY, top);
+            setIntegerParam(ADSizeX, width);
+            setIntegerParam(ADSizeY, height);
+
+            callParamCallbacks();
+        } catch (const std::runtime_error &err) {
+            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+
+            return asynError;
+        }
+
+        return status;
     }
 
     asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value) override
