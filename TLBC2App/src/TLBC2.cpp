@@ -90,6 +90,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     std::unordered_map<int, std::variant<Parameter<ViInt32>, Parameter<ViReal64>>> params;
 
     int BCAutoExposure;
+    int BCWavelength;
 
     template<typename T>
     asynStatus writeParam(asynUser *user, Parameter<T> &param, T value, T &readback) {
@@ -307,6 +308,12 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             "auto_exposure", auto_exposure_getter, auto_exposure_setter);
 
         params.insert({BCAutoExposure, auto_exposure_param});
+
+        createParam("WAVELENGTH", asynParamFloat64, &BCWavelength);
+        params.insert({BCWavelength,
+                       Parameter<ViReal64>("wavelength", TLBC2_get_wavelength,
+                                           TLBC2_set_wavelength,
+                                           TLBC2_get_wavelength_range)});
     }
 
     void readParameters() {

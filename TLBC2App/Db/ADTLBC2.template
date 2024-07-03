@@ -55,3 +55,22 @@ record(bi, "$(P)$(R)AutoExposure_RBV") {
     field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AUTO_EXPOSURE")
     field(SCAN, "I/O Intr")
 }
+
+record(ao, "$(P)$(R)Wavelength") {
+    field(DESC, "Set wavelength")
+    field(DTYP, "asynFloat64")
+    field(VAL, "245")
+    field(EGU, "nm")
+    field(PREC, "1")
+    field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))WAVELENGTH")
+    field(PINI, "YES")
+}
+
+record(ai, "$(P)$(R)Wavelength_RBV") {
+    field(DESC, "Get wavelength")
+    field(DTYP, "asynFloat64")
+    field(PREC, "1")
+    field(EGU, "nm")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))WAVELENGTH")
+    field(SCAN, "I/O Intr")
+}
