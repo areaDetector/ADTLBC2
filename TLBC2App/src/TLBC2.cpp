@@ -89,6 +89,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     std::unordered_map<int, std::variant<Parameter<ViInt32>, Parameter<ViReal64>>> params;
 
+    int BCAttenuation;
     int BCAutoExposure;
     int BCAutoCalcAreaClipLevel;
     int BCWavelength;
@@ -299,6 +300,11 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     };
 
     void createParameters() {
+        createParam("ATTENUATION", asynParamFloat64, &BCAttenuation);
+        params.insert({BCAttenuation,
+                       Parameter<ViReal64>("attenuation", TLBC2_get_attenuation,
+                                           TLBC2_set_attenuation)});
+
         createParam("AUTO_EXPOSURE", asynParamInt32, &BCAutoExposure);
 
         auto auto_exposure_getter =

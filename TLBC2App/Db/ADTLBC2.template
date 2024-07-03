@@ -37,6 +37,24 @@ record(longout, "$(P)$(R)SizeY") {
     field(PINI, "NO")
 }
 
+record(ao, "$(P)$(R)Attenuation") {
+    field(DESC, "Set attenuation")
+    field(DTYP, "asynFloat64")
+    field(VAL, "0")
+    field(EGU, "dB")
+    field(PREC, "3")
+    field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ATTENUATION")
+    field(PINI, "YES")
+}
+
+record(ai, "$(P)$(R)Attenuation_RBV") {
+    field(DESC, "Get attenuation")
+    field(DTYP, "asynFloat64")
+    field(PREC, "3")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ATTENUATION")
+    field(SCAN, "I/O Intr")
+}
+
 record(ao, "$(P)$(R)AutoCalcAreaClipLevel") {
     field(DESC, "Set auto calc area clip level")
     field(DTYP, "asynFloat64")
