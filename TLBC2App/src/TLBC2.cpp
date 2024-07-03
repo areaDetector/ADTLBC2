@@ -90,6 +90,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     std::unordered_map<int, std::variant<Parameter<ViInt32>, Parameter<ViReal64>>> params;
 
     int BCAutoExposure;
+    int BCAutoCalcAreaClipLevel;
     int BCWavelength;
 
     template<typename T>
@@ -308,6 +309,13 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             "auto_exposure", auto_exposure_getter, auto_exposure_setter);
 
         params.insert({BCAutoExposure, auto_exposure_param});
+
+        createParam("AUTO_CALC_AREA_CLIP_LEVEL", asynParamFloat64, &BCAutoCalcAreaClipLevel);
+        params.insert(
+            {BCAutoCalcAreaClipLevel,
+             Parameter<ViReal64>("auto_calculation_area_clip_level",
+                                 TLBC2_get_auto_calculation_area_clip_level,
+                                 TLBC2_set_auto_calculation_area_clip_level)});
 
         createParam("WAVELENGTH", asynParamFloat64, &BCWavelength);
         params.insert({BCWavelength,

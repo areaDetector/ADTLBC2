@@ -37,6 +37,23 @@ record(longout, "$(P)$(R)SizeY") {
     field(PINI, "NO")
 }
 
+record(ao, "$(P)$(R)AutoCalcAreaClipLevel") {
+    field(DESC, "Set auto calc area clip level")
+    field(DTYP, "asynFloat64")
+    field(VAL, "0.01")
+    field(PREC, "3")
+    field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AUTO_CALC_AREA_CLIP_LEVEL")
+    field(PINI, "YES")
+}
+
+record(ai, "$(P)$(R)AutoCalcAreaClipLevel_RBV") {
+    field(DESC, "Get auto calc area clip level")
+    field(DTYP, "asynFloat64")
+    field(PREC, "3")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AUTO_CALC_AREA_CLIP_LEVEL")
+    field(SCAN, "I/O Intr")
+}
+
 record(bo, "$(P)$(R)AutoExposure") {
     field(DESC, "Use latest data auto set exposure")
     field(DTYP, "asynInt32")
