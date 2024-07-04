@@ -1,0 +1,4 @@
+file "NDStdArrays_settings.req",  P=$(P),  R=image1:
+file "NDROI_settings.req",        P=$(P),  R=ROI1:
+file "NDStats_settings.req",      P=$(P),  R=Stats1:
+file "NDFileHDF5_settings.req",   P=$(P),  R=HDF1:

@@ -1,0 +1,2 @@
+file "ADTLBC2_settings.req", P=$(P), R=cam1:
+file "plugins.req",          P=$(P)

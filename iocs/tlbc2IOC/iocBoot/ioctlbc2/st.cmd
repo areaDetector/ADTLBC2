@@ -13,4 +13,10 @@ epicsEnvSet("MAX_IMAGE_PIXELS", "12288000")
 
 < plugins.cmd
 
+epicsEnvSet("AUTOSAVE_PREFIX", "CED-A-TLBC2")
+
+< autosave.cmd
+
 iocInit()
+
+< autosave-init.cmd
