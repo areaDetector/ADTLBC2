@@ -1,0 +1,5 @@
+file "ADBase_settings.req", P=$(P), R=$(R)
+$(P)$(R)Attenuation
+$(P)$(R)AutoCalcAreaClipLevel
+$(P)$(R)AutoExposure
+$(P)$(R)Wavelength
