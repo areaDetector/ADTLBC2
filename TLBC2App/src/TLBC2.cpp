@@ -20,6 +20,14 @@ static_assert(std::is_same_v<ViUInt16, epicsUInt16>);
 static_assert(std::is_same_v<ViReal32, epicsFloat32>);
 static_assert(std::is_same_v<ViReal64, epicsFloat64>);
 
+
+/* Define these as vendor headers do not provide them */
+enum ambient_light_correction_status {
+    AMBIENT_LIGHT_CORRECTION_AVAILABLE,
+    AMBIENT_LIGHT_CORRECTION_NEVER_RUN,
+    AMBIENT_LIGHT_CORRECTION_FAILED,
+};
+
 template<typename T, typename V>
 std::function<ViStatus(ViSession, T*)> create_getter_wrapper(std::function<ViStatus(ViSession, V*)> getter)
 {
@@ -89,6 +97,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     std::unordered_map<int, std::variant<Parameter<ViInt32>, Parameter<ViReal64>>> params;
 
+    int BCAmbientLightCorrection;
     int BCAttenuation;
     int BCAutoExposure;
     int BCAutoCalcAreaClipLevel;
@@ -97,6 +106,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     int BCCentroidX;
     int BCCentroidY;
     int BCClipLevel;
+    int BCComputeAmbientLightCorrection;
     int BCSaturation;
     int BCWavelength;
 
@@ -152,9 +162,40 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         } else if (function == ADSizeX || function == ADSizeY ||
                    function == ADMinX || function == ADMinY) {
             return writeROI(pasynUser, value);
+        } else if (function == BCComputeAmbientLightCorrection && value == 1) {
+            return runAmbientLightCorrection(pasynUser);
         }
 
         return ADDriver::writeInt32(pasynUser, value);
+    }
+
+    asynStatus runAmbientLightCorrection(asynUser *user)
+    {
+        ViUInt8 mode;
+
+        try {
+            handle_tlbc2_err(
+                TLBC2_get_ambient_light_correction_status(instr, &mode),
+                "get_ambient_light_correction_status");
+
+            if (mode == AMBIENT_LIGHT_CORRECTION_NEVER_RUN ||
+                mode == AMBIENT_LIGHT_CORRECTION_FAILED) {
+                setIntegerParam(BCComputeAmbientLightCorrection, 1);
+                callParamCallbacks();
+
+                handle_tlbc2_err(TLBC2_run_ambient_light_correction(instr),
+                                 "run_ambient_light_correction");
+
+                setIntegerParam(BCComputeAmbientLightCorrection, 0);
+                callParamCallbacks();
+            }
+        } catch (const std::runtime_error &err) {
+            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+
+            return asynError;
+        }
+
+        return asynSuccess;
     }
 
     asynStatus writeROI(asynUser *user, int value)
@@ -325,6 +366,22 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     };
 
     void createParameters() {
+        createParam("AMBIENT_LIGHT_CORRECTION", asynParamInt32,
+                    &BCAmbientLightCorrection);
+
+        auto ambient_light_correction_getter =
+            create_getter_wrapper<ViInt32, ViUInt8>(
+                TLBC2_get_ambient_light_correction_mode);
+        auto ambient_light_correction_setter =
+            create_setter_wrapper<ViInt32, ViUInt8>(
+                TLBC2_set_ambient_light_correction_mode);
+        auto ambient_light_correction_param = Parameter<ViInt32>(
+            "ambient_light_correction_mode", ambient_light_correction_getter,
+            ambient_light_correction_setter);
+
+        params.insert(
+            {BCAmbientLightCorrection, ambient_light_correction_param});
+
         createParam("ATTENUATION", asynParamFloat64, &BCAttenuation);
         params.insert({BCAttenuation,
                        Parameter<ViReal64>("attenuation", TLBC2_get_attenuation,
@@ -358,6 +415,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         params.insert({BCClipLevel,
                        Parameter<ViReal64>("clip_level", TLBC2_get_clip_level,
                                            TLBC2_set_clip_level)});
+
+        createParam("COMPUTE_AMBIENT_LIGHT_CORRECTION", asynParamInt32,
+                    &BCComputeAmbientLightCorrection);
 
         createParam("SATURATION", asynParamFloat64, &BCSaturation);
 

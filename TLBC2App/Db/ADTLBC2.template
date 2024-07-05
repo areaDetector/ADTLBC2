@@ -41,6 +41,44 @@ record(ai, "$(P)$(R)TemperatureActual") {
     field(SCAN, "1 second")
 }
 
+record(bo, "$(P)$(R)AmbientLightCorrection") {
+    field(DESC, "Change ambient light correction mode")
+    field(DTYP, "asynInt32")
+    field(ZNAM, "Disable")
+    field(ONAM, "Enable")
+    field(VAL, "0")
+    field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AMBIENT_LIGHT_CORRECTION")
+    field(PINI, "YES")
+}
+
+record(bi, "$(P)$(R)AmbientLightCorrection_RBV") {
+    field(DESC, "Get ambient light correction mode")
+    field(DTYP, "asynInt32")
+    field(ZNAM, "Disable")
+    field(ONAM, "Enable")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AMBIENT_LIGHT_CORRECTION")
+    field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)ComputeAmbientLightCorrection") {
+    field(DESC, "Compute ambient light correction")
+    field(DTYP, "asynInt32")
+    field(ZNAM, "Done")
+    field(ONAM, "Compute")
+    field(VAL, "0")
+    field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))COMPUTE_AMBIENT_LIGHT_CORRECTION")
+    field(PINI, "YES")
+}
+
+record(bi, "$(P)$(R)ComputeAmbientLightCorrection_RBV") {
+    field(DESC, "Get ambient light correction mode")
+    field(DTYP, "asynInt32")
+    field(ZNAM, "Done")
+    field(ONAM, "Computing")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))COMPUTE_AMBIENT_LIGHT_CORRECTION")
+    field(SCAN, "I/O Intr")
+}
+
 record(ao, "$(P)$(R)Attenuation") {
     field(DESC, "Set attenuation")
     field(DTYP, "asynFloat64")
