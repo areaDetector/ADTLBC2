@@ -325,6 +325,11 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     {
         while (1) {
             start_acquire_event.wait();
+            lock();
+            setIntegerParam(ADNumImagesCounter, 0);
+            callParamCallbacks();
+            unlock();
+
             auto err = TLBC2_get_scan_data(instr, &scan_data);
             if (err != VI_SUCCESS || !scan_data.isValid)
                 continue;
@@ -346,6 +351,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
             lock();
             setIntegerParam(ADAcquire, 0);
+            updateCounters();
             readAcquireTime();
             updateParamsWithCalculations(scan_data);
 
@@ -455,6 +461,13 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         }
 
         callParamCallbacks();
+    }
+
+    void updateCounters()
+    {
+        epicsInt32 num_images;
+        getIntegerParam(ADNumImagesCounter, &num_images);
+        setIntegerParam(ADNumImagesCounter, num_images + 1);
     }
 
     void readAcquireTime() {
