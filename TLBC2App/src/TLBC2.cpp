@@ -92,6 +92,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     int BCAttenuation;
     int BCAutoExposure;
     int BCAutoCalcAreaClipLevel;
+    int BCClipLevel;
     int BCWavelength;
 
     template<typename T>
@@ -322,6 +323,11 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
              Parameter<ViReal64>("auto_calculation_area_clip_level",
                                  TLBC2_get_auto_calculation_area_clip_level,
                                  TLBC2_set_auto_calculation_area_clip_level)});
+
+        createParam("CLIP_LEVEL", asynParamFloat64, &BCClipLevel);
+        params.insert({BCClipLevel,
+                       Parameter<ViReal64>("clip_level", TLBC2_get_clip_level,
+                                           TLBC2_set_clip_level)});
 
         createParam("WAVELENGTH", asynParamFloat64, &BCWavelength);
         params.insert({BCWavelength,

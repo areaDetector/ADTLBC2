@@ -91,6 +91,23 @@ record(bi, "$(P)$(R)AutoExposure_RBV") {
     field(SCAN, "I/O Intr")
 }
 
+record(ao, "$(P)$(R)ClipLevel") {
+    field(DESC, "Set clip level used for beam statistics")
+    field(DTYP, "asynFloat64")
+    field(VAL, "0.135")
+    field(PREC, "6")
+    field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))CLIP_LEVEL")
+    field(PINI, "YES")
+}
+
+record(ai, "$(P)$(R)ClipLevel_RBV") {
+    field(DESC, "Get clip level used for beam statistics")
+    field(DTYP, "asynFloat64")
+    field(PREC, "6")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))CLIP_LEVEL")
+    field(SCAN, "I/O Intr")
+}
+
 record(ao, "$(P)$(R)Wavelength") {
     field(DESC, "Set wavelength")
     field(DTYP, "asynFloat64")
