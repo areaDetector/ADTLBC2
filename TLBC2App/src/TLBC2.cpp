@@ -94,6 +94,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     int BCAutoCalcAreaClipLevel;
     int BCBeamWidthX;
     int BCBeamWidthY;
+    int BCCentroidX;
+    int BCCentroidY;
     int BCClipLevel;
     int BCWavelength;
 
@@ -348,6 +350,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         createParam("BEAM_WIDTH_X", asynParamFloat64, &BCBeamWidthX);
         createParam("BEAM_WIDTH_Y", asynParamFloat64, &BCBeamWidthY);
 
+        createParam("CENTROID_X", asynParamFloat64, &BCCentroidX);
+        createParam("CENTROID_Y", asynParamFloat64, &BCCentroidY);
+
         createParam("CLIP_LEVEL", asynParamFloat64, &BCClipLevel);
         params.insert({BCClipLevel,
                        Parameter<ViReal64>("clip_level", TLBC2_get_clip_level,
@@ -413,6 +418,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     {
         setDoubleParam(BCBeamWidthX, data.beamWidthClipX);
         setDoubleParam(BCBeamWidthY, data.beamWidthClipY);
+        setDoubleParam(BCCentroidX, data.centroidPositionX);
+        setDoubleParam(BCCentroidY, data.centroidPositionY);
     }
 
     void addAttributesFromScan(NDArray* image, TLBC1_Calculations &data) {

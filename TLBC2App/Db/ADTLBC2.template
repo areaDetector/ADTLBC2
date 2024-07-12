@@ -111,6 +111,22 @@ record(ai, "$(P)$(R)BeamWidthY_RBV") {
     field(SCAN, "I/O Intr")
 }
 
+record(ai, "$(P)$(R)CentroidX_RBV") {
+    field(DESC, "Centroid position in X axis")
+    field(DTYP, "asynFloat64")
+    field(PREC, "3")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))CENTROID_X")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)$(R)CentroidY_RBV") {
+    field(DESC, "Centroid position in Y axis")
+    field(DTYP, "asynFloat64")
+    field(PREC, "3")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))CENTROID_Y")
+    field(SCAN, "I/O Intr")
+}
+
 record(ao, "$(P)$(R)ClipLevel") {
     field(DESC, "Set clip level used for beam statistics")
     field(DTYP, "asynFloat64")
