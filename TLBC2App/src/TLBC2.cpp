@@ -258,6 +258,23 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         }
     }
 
+    asynStatus readFloat64(asynUser *pasynUser, epicsFloat64 *value)
+    {
+        const int function = pasynUser->reason;
+
+        if (function == ADTemperatureActual) {
+            auto item = params.find(function);
+
+            auto param = std::get<Parameter<ViReal64>>(item->second);
+
+            readbackParam<ViReal64>(function, param);
+            readbackParam<ViReal64>(ADTemperature, param);
+            callParamCallbacks();
+        }
+
+        return ADDriver::readFloat64(pasynUser, value);
+    }
+
     void run() override
     {
         while (1) {
@@ -538,6 +555,7 @@ public:
         params({
             {ADAcquireTime, Parameter<ViReal64>("exposure_time", TLBC2_get_exposure_time, TLBC2_set_exposure_time, TLBC2_get_exposure_time_range)},
             {ADGain, Parameter<ViReal64>("gain", TLBC2_get_gain, TLBC2_set_gain, TLBC2_get_gain_range)},
+            {ADTemperatureActual, Parameter<ViReal64>("temperature", TLBC2_get_temperature, {})}
         })
     {
         ViUInt32 device_count = 0;

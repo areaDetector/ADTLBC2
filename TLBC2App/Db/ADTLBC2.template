@@ -37,6 +37,10 @@ record(longout, "$(P)$(R)SizeY") {
     field(PINI, "NO")
 }
 
+record(ai, "$(P)$(R)TemperatureActual") {
+    field(SCAN, "1 second")
+}
+
 record(ao, "$(P)$(R)Attenuation") {
     field(DESC, "Set attenuation")
     field(DTYP, "asynFloat64")
