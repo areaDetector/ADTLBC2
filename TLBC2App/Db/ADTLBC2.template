@@ -95,6 +95,22 @@ record(bi, "$(P)$(R)AutoExposure_RBV") {
     field(SCAN, "I/O Intr")
 }
 
+record(ai, "$(P)$(R)BeamWidthX_RBV") {
+    field(DESC, "Beam width at clip level in X axis")
+    field(DTYP, "asynFloat64")
+    field(PREC, "3")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))BEAM_WIDTH_X")
+    field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)$(R)BeamWidthY_RBV") {
+    field(DESC, "Beam width at clip level in Y axis")
+    field(DTYP, "asynFloat64")
+    field(PREC, "3")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))BEAM_WIDTH_Y")
+    field(SCAN, "I/O Intr")
+}
+
 record(ao, "$(P)$(R)ClipLevel") {
     field(DESC, "Set clip level used for beam statistics")
     field(DTYP, "asynFloat64")

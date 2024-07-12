@@ -92,6 +92,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     int BCAttenuation;
     int BCAutoExposure;
     int BCAutoCalcAreaClipLevel;
+    int BCBeamWidthX;
+    int BCBeamWidthY;
     int BCClipLevel;
     int BCWavelength;
 
@@ -301,6 +303,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             lock();
             setIntegerParam(ADAcquire, 0);
             readAcquireTime();
+            updateParamsWithCalculations(scan_data);
+
             callParamCallbacks();
             unlock();
         }
@@ -340,6 +344,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
              Parameter<ViReal64>("auto_calculation_area_clip_level",
                                  TLBC2_get_auto_calculation_area_clip_level,
                                  TLBC2_set_auto_calculation_area_clip_level)});
+
+        createParam("BEAM_WIDTH_X", asynParamFloat64, &BCBeamWidthX);
+        createParam("BEAM_WIDTH_Y", asynParamFloat64, &BCBeamWidthY);
 
         createParam("CLIP_LEVEL", asynParamFloat64, &BCClipLevel);
         params.insert({BCClipLevel,
@@ -400,6 +407,12 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, err.what());
             }
         }
+    }
+
+    void updateParamsWithCalculations(TLBC1_Calculations &data)
+    {
+        setDoubleParam(BCBeamWidthX, data.beamWidthClipX);
+        setDoubleParam(BCBeamWidthY, data.beamWidthClipY);
     }
 
     void addAttributesFromScan(NDArray* image, TLBC1_Calculations &data) {
