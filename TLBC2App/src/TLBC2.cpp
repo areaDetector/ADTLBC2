@@ -97,6 +97,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     int BCCentroidX;
     int BCCentroidY;
     int BCClipLevel;
+    int BCSaturation;
     int BCWavelength;
 
     template<typename T>
@@ -358,6 +359,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                        Parameter<ViReal64>("clip_level", TLBC2_get_clip_level,
                                            TLBC2_set_clip_level)});
 
+        createParam("SATURATION", asynParamFloat64, &BCSaturation);
+
         createParam("WAVELENGTH", asynParamFloat64, &BCWavelength);
         params.insert({BCWavelength,
                        Parameter<ViReal64>("wavelength", TLBC2_get_wavelength,
@@ -420,6 +423,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         setDoubleParam(BCBeamWidthY, data.beamWidthClipY);
         setDoubleParam(BCCentroidX, data.centroidPositionX);
         setDoubleParam(BCCentroidY, data.centroidPositionY);
+        setDoubleParam(BCSaturation, data.saturation);
     }
 
     void addAttributesFromScan(NDArray* image, TLBC1_Calculations &data) {
