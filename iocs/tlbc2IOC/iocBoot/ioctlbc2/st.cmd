@@ -5,11 +5,11 @@
 epicsEnvSet("PREFIX", "CED:A:TLBC2:")
 epicsEnvSet("PORT", "TLBC2")
 epicsEnvSet("MAX_IMAGE_WIDTH", "4096")
-epicsEnvSet("MAX_IMAGE_HEIGHT", "3000")
+epicsEnvSet("MAX_IMAGE_HEIGHT", "2992")
 
 < camera.cmd
 
-epicsEnvSet("MAX_IMAGE_PIXELS", "12288000")
+epicsEnvSet("MAX_IMAGE_PIXELS", "12255232")
 
 < plugins.cmd
 
