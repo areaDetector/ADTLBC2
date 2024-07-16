@@ -79,6 +79,15 @@ record(bi, "$(P)$(R)ComputeAmbientLightCorrection_RBV") {
     field(SCAN, "I/O Intr")
 }
 
+record(bi, "$(P)$(R)AmbientLightCorrectionStatus") {
+    field(DESC, "Get computation status")
+    field(DTYP, "asynInt32")
+    field(ZNAM, "Never run")
+    field(ONAM, "Computed")
+    field(INP, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))AMBIENT_LIGHT_CORRECTION_STATUS")
+    field(SCAN, "I/O Intr")
+}
+
 record(ao, "$(P)$(R)Attenuation") {
     field(DESC, "Set attenuation")
     field(DTYP, "asynFloat64")

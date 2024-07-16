@@ -98,6 +98,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     std::unordered_map<int, std::variant<Parameter<ViInt32>, Parameter<ViReal64>>> params;
 
     int BCAmbientLightCorrection;
+    int BCAmbientLightCorrectionStatus;
     int BCAttenuation;
     int BCAutoExposure;
     int BCAutoCalcAreaClipLevel;
@@ -187,6 +188,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                                  "run_ambient_light_correction");
 
                 setIntegerParam(BCComputeAmbientLightCorrection, 0);
+                setIntegerParam(BCAmbientLightCorrectionStatus, 1);
                 callParamCallbacks();
             }
         } catch (const std::runtime_error &err) {
@@ -387,6 +389,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
         params.insert(
             {BCAmbientLightCorrection, ambient_light_correction_param});
+
+        createParam("AMBIENT_LIGHT_CORRECTION_STATUS", asynParamInt32,
+                    &BCAmbientLightCorrectionStatus);
 
         createParam("ATTENUATION", asynParamFloat64, &BCAttenuation);
         params.insert({BCAttenuation,
@@ -685,6 +690,8 @@ public:
 
         setIntegerParam(ADMaxSizeX, maxSizeX);
         setIntegerParam(ADMaxSizeY, maxSizeY);
+        setIntegerParam(BCAmbientLightCorrectionStatus, 0);
+
         readParameters();
 
         acq_thread.start();
