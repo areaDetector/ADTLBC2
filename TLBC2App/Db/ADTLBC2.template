@@ -13,12 +13,20 @@ record(ao, "$(P)$(R)AcquireTime") {
     field(PREC, "6")
     field(VAL, "0.1")
     field(EGU, "second")
+    field(DRVL, "0.000028")
+    field(DRVH, "0.5")
 }
 
 record(ai, "$(P)$(R)AcquireTime_RBV") {
     field(ASLO, "1e-3")
     field(PREC, "6")
     field(EGU, "second")
+}
+
+record(ao, "$(P)$(R)Gain") {
+    field(EGU, "dB")
+    field(DRVL, "0")
+    field(DRVH, "12")
 }
 
 record(longout, "$(P)$(R)MinX") {
@@ -94,6 +102,8 @@ record(ao, "$(P)$(R)Attenuation") {
     field(VAL, "0")
     field(EGU, "dB")
     field(PREC, "3")
+    field(DRVL, "0")
+    field(DRVH, "100")
     field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ATTENUATION")
     field(PINI, "YES")
 }
@@ -178,6 +188,8 @@ record(ao, "$(P)$(R)ClipLevel") {
     field(DESC, "Set clip level used for beam statistics")
     field(DTYP, "asynFloat64")
     field(VAL, "0.135")
+    field(DRVL, "0")
+    field(DRVH, "1")
     field(PREC, "6")
     field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))CLIP_LEVEL")
     field(PINI, "YES")
@@ -205,6 +217,8 @@ record(ao, "$(P)$(R)Wavelength") {
     field(VAL, "245")
     field(EGU, "nm")
     field(PREC, "1")
+    field(DRVL, "245")
+    field(DRVH, "400")
     field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))WAVELENGTH")
     field(PINI, "YES")
 }
