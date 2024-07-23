@@ -332,7 +332,11 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             callParamCallbacks();
             unlock();
 
-            auto err = TLBC2_get_scan_data(instr, &scan_data);
+            auto err = TLBC2_request_new_measurement(instr);
+            if (err != VI_SUCCESS)
+                continue;
+
+            err = TLBC2_get_scan_data(instr, &scan_data);
             if (err != VI_SUCCESS || !scan_data.isValid)
                 continue;
 
