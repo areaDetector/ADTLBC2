@@ -186,11 +186,10 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
                 handle_tlbc2_err(TLBC2_run_ambient_light_correction(instr),
                                  "run_ambient_light_correction");
-
-                setIntegerParam(BCComputeAmbientLightCorrection, 0);
-                setIntegerParam(BCAmbientLightCorrectionStatus, 1);
-                callParamCallbacks();
             }
+            setIntegerParam(BCComputeAmbientLightCorrection, 0);
+            setIntegerParam(BCAmbientLightCorrectionStatus, 1);
+            callParamCallbacks();
         } catch (const std::runtime_error &err) {
             asynPrint(user, ASYN_TRACE_ERROR, err.what());
 
