@@ -88,7 +88,7 @@ record(bi, "$(P)$(R)ComputeAmbientLightCorrection_RBV") {
     field(SCAN, "I/O Intr")
 }
 
-record(bi, "$(P)$(R)AmbientLightCorrectionStatus") {
+record(bi, "$(P)$(R)AmbientLightCorrectionStatus_RBV") {
     field(DESC, "Get computation status")
     field(DTYP, "asynInt32")
     field(ZNAM, "Never run")
