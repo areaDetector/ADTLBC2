@@ -120,7 +120,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         } catch (const std::runtime_error &err) {
             // when failing to set, we still need to readback, so just
             // report this and keep going
-            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+            asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
 
             status = asynError;
         }
@@ -191,7 +191,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             setIntegerParam(BCAmbientLightCorrectionStatus, 1);
             callParamCallbacks();
         } catch (const std::runtime_error &err) {
-            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+            asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
 
             return asynError;
         }
@@ -250,7 +250,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 "set_calculation_area_mode");
 
         } catch (const std::runtime_error &err) {
-            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+            asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
 
             status = asynError;
         }
@@ -268,7 +268,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
             callParamCallbacks();
         } catch (const std::runtime_error &err) {
-            asynPrint(user, ASYN_TRACE_ERROR, err.what());
+            asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
 
             return asynError;
         }
@@ -301,7 +301,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
             return ADDriver::writeFloat64(pasynUser, value);
         } catch (const std::runtime_error &err) {
-            asynPrint(pasynUser, ASYN_TRACE_ERROR, err.what());
+            asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s\n", err.what());
 
             return asynError;
         }
@@ -373,8 +373,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
         ViChar ebuf[TLBC2_ERR_DESCR_BUFFER_SIZE];
         TLBC2_error_message(instr, err, ebuf);
-        throw std::runtime_error("TBLC2: " + function + ": " +
-                                 std::string(ebuf) + "\n");
+        throw std::runtime_error("TBLC2: " + function + ": " + std::string(ebuf));
     };
 
     void createParameters() {
@@ -494,7 +493,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
                 setDoubleParam(ADAcquireTime, exposure_time);
             } catch (const std::runtime_error &err) {
-                asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, err.what());
+                asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s\n", err.what());
             }
         }
     }
