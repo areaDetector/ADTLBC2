@@ -234,6 +234,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             handle_tlbc2_err(TLBC2_set_calculation_area_mode(instr, VI_ON, 0),
                              "set_calculation_area_mode");
 
+            /* resetting the user calculation area is necessary to avoid
+             * triggering a segfault in the library code */
             handle_tlbc2_err(
                 TLBC2_set_user_calculation_area(instr, 0, 0, maxSizeX, maxSizeY, 0),
                 "set_user_calculation_area");
