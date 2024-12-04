@@ -333,24 +333,22 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             lock();
             setIntegerParam(ADNumImagesCounter, 0);
             callParamCallbacks();
-            unlock();
-
-            auto err = TLBC2_request_new_measurement(instr);
-            if (err != VI_SUCCESS)
-                continue;
-
-            err = TLBC2_get_scan_data(instr, &scan_data);
-            if (err != VI_SUCCESS || !scan_data.isValid)
-                continue;
 
             ViUInt16 width, height;
             ViUInt8 bpp;
-            err = TLBC2_get_image(instr, image_data, &width, &height, &bpp);
-            if (err != VI_SUCCESS)
+            try {
+                handle_tlbc2_err(TLBC2_request_new_measurement(instr), "request_new_measurement");
+                handle_tlbc2_err(TLBC2_get_scan_data(instr, &scan_data), "get_scan_data");
+                if (!scan_data.isValid)
+                    throw std::runtime_error("scan data is invalid");
+                handle_tlbc2_err(TLBC2_get_image(instr, image_data, &width, &height, &bpp), "get_image");
+            } catch (const std::runtime_error &err) {
+                /* TODO: add error reporting when capturing an image fails */
+                unlock();
                 continue;
+            }
 
             size_t dims[] = {width, height};
-            /* TODO: should this be done under a lock? */
             auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
             memcpy(pImage->pData, image_data, width * height * bpp);
 
@@ -358,7 +356,6 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
             doCallbacksGenericPointer(pImage, NDArrayData, 0);
 
-            lock();
             setIntegerParam(ADAcquire, 0);
             updateCounters();
             readAcquireTime();
