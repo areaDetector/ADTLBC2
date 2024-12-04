@@ -317,7 +317,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             auto param = std::get<Parameter<ViReal64>>(item->second);
 
             readbackParam<ViReal64>(function, param);
-            readbackParam<ViReal64>(ADTemperature, param);
+            epicsFloat64 temperature;
+            getDoubleParam(function, &temperature);
+            setDoubleParam(ADTemperature, temperature);
             callParamCallbacks();
         }
 
