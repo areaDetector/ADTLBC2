@@ -8,7 +8,7 @@
 
 include "ADBase.template"
 
-record(ao, "$(P)$(R)AcquireTime") {
+record("*", "$(P)$(R)AcquireTime") {
     field(ASLO, "1e-3")
     field(PREC, "6")
     field(VAL, "0.1")
@@ -17,35 +17,35 @@ record(ao, "$(P)$(R)AcquireTime") {
     field(DRVH, "0.5")
 }
 
-record(ai, "$(P)$(R)AcquireTime_RBV") {
+record("*", "$(P)$(R)AcquireTime_RBV") {
     field(ASLO, "1e-3")
     field(PREC, "6")
     field(EGU, "second")
 }
 
-record(ao, "$(P)$(R)Gain") {
+record("*", "$(P)$(R)Gain") {
     field(EGU, "dB")
     field(DRVL, "0")
     field(DRVH, "12")
 }
 
-record(longout, "$(P)$(R)MinX") {
+record("*", "$(P)$(R)MinX") {
     field(PINI, "NO")
 }
 
-record(longout, "$(P)$(R)MinX") {
+record("*", "$(P)$(R)MinX") {
     field(PINI, "NO")
 }
 
-record(longout, "$(P)$(R)SizeX") {
+record("*", "$(P)$(R)SizeX") {
     field(PINI, "NO")
 }
 
-record(longout, "$(P)$(R)SizeY") {
+record("*", "$(P)$(R)SizeY") {
     field(PINI, "NO")
 }
 
-record(ai, "$(P)$(R)TemperatureActual") {
+record("*", "$(P)$(R)TemperatureActual") {
     field(SCAN, "1 second")
 }
 
