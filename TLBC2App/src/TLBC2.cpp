@@ -352,6 +352,13 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
             memcpy(pImage->pData, image_data, width * height * bpp);
 
+            /* these functions need to update the paramList before getAttributes
+             * is called, since getAttributes might be configured to get
+             * parameters from the paramList */
+            updateCounters();
+            readAcquireTime();
+            updateParamsWithCalculations(scan_data);
+
             getAttributes(pImage->pAttributeList);
             addAttributesFromScan(pImage, scan_data);
 
@@ -359,9 +366,6 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             pImage->release();
 
             setIntegerParam(ADAcquire, 0);
-            updateCounters();
-            readAcquireTime();
-            updateParamsWithCalculations(scan_data);
 
             callParamCallbacks();
             unlock();
