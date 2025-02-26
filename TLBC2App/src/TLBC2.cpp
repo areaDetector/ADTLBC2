@@ -355,6 +355,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             addAttributesFromScan(pImage, scan_data);
 
             doCallbacksGenericPointer(pImage, NDArrayData, 0);
+            pImage->release();
 
             setIntegerParam(ADAcquire, 0);
             updateCounters();
