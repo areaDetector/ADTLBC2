@@ -521,6 +521,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         list->add("LightShieldedPixelMeanIntensity",
                   "Mean intensity of the light shielded pixels", NDAttrFloat64,
                   &data.lightShieldedPixelMeanIntensity);
+        list->add("Saturation",
+                  "Ratio of the highest intensity in the scan to the dynamic range of the sensor",
+                  NDAttrFloat64, &data.saturation);
         list->add("PeakPositionX", "Peak x pixel position", NDAttrUInt16,
                   &data.peakPositionX);
         list->add("PeakPositionY", "Peak y pixel position", NDAttrUInt16,
