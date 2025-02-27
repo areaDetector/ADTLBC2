@@ -352,6 +352,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
             memcpy(pImage->pData, image_data, width * height * bpp);
 
+            getAttributes(pImage->pAttributeList);
             addAttributesFromScan(pImage, scan_data);
 
             doCallbacksGenericPointer(pImage, NDArrayData, 0);
@@ -509,7 +510,6 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     }
 
     void addAttributesFromScan(NDArray* image, TLBC1_Calculations &data) {
-        getAttributes(image->pAttributeList);
         auto list = image->pAttributeList;
 
         list->add("BaseLevel", "Mean noise of the sensor", NDAttrFloat64,
