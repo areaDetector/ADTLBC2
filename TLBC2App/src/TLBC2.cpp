@@ -19,6 +19,7 @@
 static_assert(std::is_same_v<ViUInt16, epicsUInt16>);
 static_assert(std::is_same_v<ViReal32, epicsFloat32>);
 static_assert(std::is_same_v<ViReal64, epicsFloat64>);
+static_assert(std::is_same_v<ViChar, char>);
 
 
 /* Define these as vendor headers do not provide them */
@@ -677,22 +678,29 @@ public:
 
         ViBoolean available;
         ViChar resource_name[256];
+        ViChar manufacturer[64];
+        ViChar model_name[64];
+        ViChar serial_number[64];
 
         /* XXX: we always use the first available device */
-        handle_tlbc2_err(TLBC2_get_device_information(
-            VI_NULL, /* vi */
-            0, /* device index */
-            VI_NULL, /* device manufacturer */
-            VI_NULL, /* model name */
-            VI_NULL, /* serial number */
-            &available,
-            resource_name), "get_device_information");
+        handle_tlbc2_err(
+            TLBC2_get_device_information(VI_NULL,       /* vi */
+                                         0,             /* device index */
+                                         manufacturer,
+                                         model_name,
+                                         serial_number,
+                                         &available, resource_name),
+            "get_device_information");
 
-        handle_tlbc2_err(TLBC2_init(
-            resource_name,
-            VI_TRUE, /* identification query */
-            reset ? VI_TRUE : VI_FALSE, /* reset device */
-            &instr), "init");
+        setStringParam(ADManufacturer, manufacturer);
+        setStringParam(ADModel, model_name);
+        setStringParam(ADSerialNumber, serial_number);
+
+        handle_tlbc2_err(TLBC2_init(resource_name,
+                                    VI_TRUE, /* identification query */
+                                    reset ? VI_TRUE : VI_FALSE, /* reset device */
+                                    &instr),
+                         "init");
 
         createParameters();
 
