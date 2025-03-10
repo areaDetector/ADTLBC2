@@ -702,6 +702,16 @@ public:
                                     &instr),
                          "init");
 
+        ViChar sdk_version[256];
+        ViChar firmware_version[256];
+
+        handle_tlbc2_err(
+            TLBC2_revision_query(instr, sdk_version, firmware_version),
+            "Get firmware and SDK version");
+
+        setStringParam(ADSDKVersion, sdk_version);
+        setStringParam(ADFirmwareVersion, firmware_version);
+
         createParameters();
 
         setIntegerParam(ADMaxSizeX, maxSizeX);
