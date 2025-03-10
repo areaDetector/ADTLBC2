@@ -311,15 +311,12 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     {
         const int function = pasynUser->reason;
 
-        if (function == ADTemperatureActual) {
-            auto item = params.find(function);
+        auto item = params.find(function);
 
+        if (item != params.end()) {
             auto param = std::get<Parameter<ViReal64>>(item->second);
 
             readbackParam<ViReal64>(function, param);
-            epicsFloat64 temperature;
-            getDoubleParam(function, &temperature);
-            setDoubleParam(ADTemperature, temperature);
             callParamCallbacks();
         }
 
