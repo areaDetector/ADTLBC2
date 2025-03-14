@@ -27,3 +27,4 @@ O.*/
 *.log
 .*.swp
 .DS_Store
+/build/

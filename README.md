@@ -16,4 +16,5 @@ entire model family.
 [SDK]: https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?code=Beam
 
 Additional information:
+- [Documentation](docs/ADTLBC2/ADTLBC2.rst)
 - [Release notes](RELEASE.md)
