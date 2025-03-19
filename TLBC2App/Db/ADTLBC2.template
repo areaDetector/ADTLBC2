@@ -133,7 +133,7 @@ record(ai, "$(P)$(R)AutoCalcAreaClipLevel_RBV") {
 }
 
 record(bo, "$(P)$(R)AutoExposure") {
-    field(DESC, "Use latest data auto set exposure")
+    field(DESC, "Use latest data to auto. set exposure")
     field(DTYP, "asynInt32")
     field(ZNAM, "No")
     field(ONAM, "Yes")
