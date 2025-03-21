@@ -14,3 +14,6 @@ entire model family.
 [areaDetector]: https://github.com/areaDetector/areaDetector/blob/master/README.md
 [camera]: https://www.thorlabs.com/thorproduct.cfm?partnumber=BC210CU/M
 [SDK]: https://www.thorlabs.com/software_pages/ViewSoftwarePage.cfm?code=Beam
+
+Additional information:
+- [Release notes](RELEASE.md)
