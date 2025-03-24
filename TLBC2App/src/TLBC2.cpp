@@ -477,6 +477,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 do_acquisition();
             } catch (std::runtime_error &err) {
                 setIntegerParam(ADAcquire, 0);
+                asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s\n", err.what());
                 setIntegerParam(ADStatus, ADStatusError);
                 callParamCallbacks();
                 continue;
