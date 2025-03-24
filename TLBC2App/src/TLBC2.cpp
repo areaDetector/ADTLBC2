@@ -124,6 +124,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             // when failing to set, we still need to readback, so just
             // report this and keep going
             asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
+            setStringParam(ADStatusMessage, err.what());
 
             status = asynError;
         }
@@ -207,6 +208,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             callParamCallbacks();
         } catch (const std::runtime_error &err) {
             asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
+            setStringParam(ADStatusMessage, err.what());
+            callParamCallbacks();
 
             return asynError;
         }
@@ -266,6 +269,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
         } catch (const std::runtime_error &err) {
             asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
+            setStringParam(ADStatusMessage, err.what());
 
             status = asynError;
         }
@@ -284,6 +288,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             callParamCallbacks();
         } catch (const std::runtime_error &err) {
             asynPrint(user, ASYN_TRACE_ERROR, "%s\n", err.what());
+            setStringParam(ADStatusMessage, err.what());
+            callParamCallbacks();
 
             return asynError;
         }
@@ -317,6 +323,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             return ADDriver::writeFloat64(pasynUser, value);
         } catch (const std::runtime_error &err) {
             asynPrint(pasynUser, ASYN_TRACE_ERROR, "%s\n", err.what());
+            setStringParam(ADStatusMessage, err.what());
+            callParamCallbacks();
 
             return asynError;
         }
@@ -479,6 +487,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 setIntegerParam(ADAcquire, 0);
                 asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s\n", err.what());
                 setIntegerParam(ADStatus, ADStatusError);
+                setStringParam(ADStatusMessage, err.what());
                 callParamCallbacks();
                 continue;
             }
@@ -616,6 +625,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 setDoubleParam(ADAcquireTime, exposure_time);
             } catch (const std::runtime_error &err) {
                 asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s\n", err.what());
+                setStringParam(ADStatusMessage, err.what());
             }
         }
     }
