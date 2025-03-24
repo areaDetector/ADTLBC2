@@ -347,6 +347,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         getDoubleParam(ADAcquirePeriod, &acquirePeriod);
         delay = acquirePeriod - elapsedTime;
 
+        setIntegerParam(ADStatus, ADStatusWaiting);
+        callParamCallbacks();
+
         /* If delay is exactly 0 then this thread never sleeps and the mutex is locked again
          * before any of the other threads can lock it. This means that the background thread
          * which runs the writeInt32 function can never trigger stop_acquire_event and
@@ -363,6 +366,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     }
 
     void acquire_image() {
+        setIntegerParam(ADStatus, ADStatusAcquire);
+        callParamCallbacks();
+
         ViUInt16 width, height;
         ViUInt8 bpp;
 
@@ -371,6 +377,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         if (!scan_data.isValid)
             throw std::runtime_error("scan data is invalid");
         handle_tlbc2_err(TLBC2_get_image(instr, image_data, &width, &height, &bpp), "get_image");
+
+        setIntegerParam(ADStatus, ADStatusReadout);
+        callParamCallbacks();
 
         size_t dims[] = {width, height};
         auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
@@ -394,6 +403,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     void do_acquisition() {
         /* Initial acquisition state */
+        setIntegerParam(ADStatus, ADStatusAcquire);
         setIntegerParam(ADNumImagesCounter, 0);
         setIntegerParam(ADAcquire, 1);
         callParamCallbacks();
@@ -430,6 +440,24 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 }
         }
 
+        /* Update ADStatus based on imageMode and NumImages */
+        switch (imageMode) {
+            case ADImageSingle:
+            case ADImageContinuous:
+                setIntegerParam(ADStatus, ADStatusIdle);
+                break;
+            case ADImageMultiple:
+                int numImagesCounter, numImages;
+                getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+                getIntegerParam(ADNumImages, &numImages);
+                if (numImagesCounter >= numImages) {
+                    setIntegerParam(ADStatus, ADStatusIdle);
+                } else {
+                    setIntegerParam(ADStatus, ADStatusAborted);
+                }
+                break;
+        }
+
         setIntegerParam(ADAcquire, 0);
         callParamCallbacks();
     }
@@ -437,6 +465,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     void run() override
     {
         lock();
+        setIntegerParam(ADStatus, ADStatusIdle);
+        callParamCallbacks();
+
         while (1) {
             unlock();
             start_acquire_event.wait();
@@ -446,6 +477,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 do_acquisition();
             } catch (std::runtime_error &err) {
                 setIntegerParam(ADAcquire, 0);
+                setIntegerParam(ADStatus, ADStatusError);
+                callParamCallbacks();
                 continue;
             }
         }
@@ -753,6 +786,9 @@ public:
             {ADTemperatureActual, Parameter<ViReal64>("temperature", TLBC2_get_temperature, {})}
         })
     {
+        setIntegerParam(ADStatus, ADStatusInitializing);
+        callParamCallbacks();
+
         ViUInt32 device_count = 0;
         handle_tlbc2_err(TLBC2_get_device_count(VI_NULL, &device_count),
                          "get_device_count");
