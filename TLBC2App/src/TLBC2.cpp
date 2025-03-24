@@ -14,6 +14,7 @@
 #include <TLBC2.h>
 #include <TLBC1_Calculations.h>
 
+#include <alarm.h>
 #include <epicsExport.h> // defines epicsExportSharedSymbols, do not move
 
 static_assert(std::is_same_v<ViUInt16, epicsUInt16>);
@@ -94,6 +95,7 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     ViUInt8 image_data[TLBC1_MAX_ROWS * TLBC1_MAX_COLUMNS * 2];
 
     epicsEvent start_acquire_event;
+    epicsEvent stop_acquire_event;
     epicsThread acq_thread;
 
     std::unordered_map<int, std::variant<Parameter<ViInt32>, Parameter<ViReal64>>> params;
@@ -145,6 +147,9 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value) override
     {
+        int acquiring;
+        getIntegerParam(ADAcquire, &acquiring);
+
         const int function = pasynUser->reason;
 
         auto item = params.find(function);
@@ -159,8 +164,17 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             setIntegerParam(function, readback);
             callParamCallbacks();
             return status;
-        } else if (function == ADAcquire && value == 1) {
-            start_acquire_event.trigger();
+        } else if (function == ADAcquire) {
+            if (value && !acquiring) {
+                start_acquire_event.trigger();
+            } else if (!value && acquiring) {
+                stop_acquire_event.trigger();
+            } else {
+                return asynError;
+            }
+            /* Avoid calling ADDriver::writeInt32 so that we set ADAcquire only when
+             * acquisition actually starts, and Acquire_RBV accurately reflects current state */
+            return asynSuccess;
         } else if (function == ADSizeX || function == ADSizeY ||
                    function == ADMinX || function == ADMinY) {
             return writeROI(pasynUser, value);
@@ -324,49 +338,116 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         return ADDriver::readFloat64(pasynUser, value);
     }
 
+    bool try_wait_acquire_period(epicsTimeStamp startTime) {
+        epicsTimeStamp endTime;
+        double elapsedTime, delay, acquirePeriod;
+
+        epicsTimeGetCurrent(&endTime);
+        elapsedTime = epicsTimeDiffInSeconds(&endTime, &startTime);
+        getDoubleParam(ADAcquirePeriod, &acquirePeriod);
+        delay = acquirePeriod - elapsedTime;
+
+        /* If delay is exactly 0 then this thread never sleeps and the mutex is locked again
+         * before any of the other threads can lock it. This means that the background thread
+         * which runs the writeInt32 function can never trigger stop_acquire_event and
+         * acquisition is never stopped. To mitigate this we set a minimal delay which is
+         * imperceptible but still causes the current thread to sleep, allowing the other
+         * thread to reliably wake up and trigger the stop_acquire_event */
+        if (delay < 0.) delay = 0.001;
+
+        unlock();
+        /* .wait() returns true if the event was triggered, false if it timed out */
+        bool stop_acquisition = stop_acquire_event.wait(delay);
+        lock();
+        return stop_acquisition;
+    }
+
+    void acquire_image() {
+        ViUInt16 width, height;
+        ViUInt8 bpp;
+
+        handle_tlbc2_err(TLBC2_request_new_measurement(instr), "request_new_measurement");
+        handle_tlbc2_err(TLBC2_get_scan_data(instr, &scan_data), "get_scan_data");
+        if (!scan_data.isValid)
+            throw std::runtime_error("scan data is invalid");
+        handle_tlbc2_err(TLBC2_get_image(instr, image_data, &width, &height, &bpp), "get_image");
+
+        size_t dims[] = {width, height};
+        auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
+        memcpy(pImage->pData, image_data, width * height * bpp);
+
+        /* these functions need to update the paramList before getAttributes
+         * is called, since getAttributes might be configured to get
+         * parameters from the paramList */
+        updateCounters();
+        readAcquireTime();
+        updateParamsWithCalculations(scan_data);
+
+        getAttributes(pImage->pAttributeList);
+        addAttributesFromScan(pImage, scan_data);
+
+        doCallbacksGenericPointer(pImage, NDArrayData, 0);
+        pImage->release();
+
+        callParamCallbacks();
+    }
+
+    void do_acquisition() {
+        /* Initial acquisition state */
+        setIntegerParam(ADNumImagesCounter, 0);
+        setIntegerParam(ADAcquire, 1);
+        callParamCallbacks();
+
+        int imageMode;
+        getIntegerParam(ADImageMode, &imageMode);
+        switch (imageMode) {
+            case ADImageSingle:
+                acquire_image();
+                break;
+
+            case ADImageMultiple:
+            case ADImageContinuous:
+                while(true) {
+                    epicsTimeStamp startTime;
+                    epicsTimeGetCurrent(&startTime);
+
+                    acquire_image();
+
+                    if (imageMode == ADImageMultiple) {
+                        int numImagesCounter, numImages;
+                        getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+                        getIntegerParam(ADNumImages, &numImages);
+                        if (numImagesCounter >= numImages) {
+                            break;
+                        }
+                    }
+
+                    /* Waits until AcquirePeriod is over or stop_acquire_event is triggered.
+                     * Returns true if stop_acquire_event was triggered */
+                    if (try_wait_acquire_period(startTime)) {
+                        break;
+                    }
+                }
+        }
+
+        setIntegerParam(ADAcquire, 0);
+        callParamCallbacks();
+    }
+
     void run() override
     {
+        lock();
         while (1) {
+            unlock();
             start_acquire_event.wait();
             lock();
-            setIntegerParam(ADNumImagesCounter, 0);
-            callParamCallbacks();
 
-            ViUInt16 width, height;
-            ViUInt8 bpp;
             try {
-                handle_tlbc2_err(TLBC2_request_new_measurement(instr), "request_new_measurement");
-                handle_tlbc2_err(TLBC2_get_scan_data(instr, &scan_data), "get_scan_data");
-                if (!scan_data.isValid)
-                    throw std::runtime_error("scan data is invalid");
-                handle_tlbc2_err(TLBC2_get_image(instr, image_data, &width, &height, &bpp), "get_image");
-            } catch (const std::runtime_error &err) {
-                /* TODO: add error reporting when capturing an image fails */
-                unlock();
+                do_acquisition();
+            } catch (std::runtime_error &err) {
+                setIntegerParam(ADAcquire, 0);
                 continue;
             }
-
-            size_t dims[] = {width, height};
-            auto pImage = this->pNDArrayPool->alloc(2, dims, bpp == 2 ? NDUInt16 : NDUInt8, 0, NULL);
-            memcpy(pImage->pData, image_data, width * height * bpp);
-
-            /* these functions need to update the paramList before getAttributes
-             * is called, since getAttributes might be configured to get
-             * parameters from the paramList */
-            updateCounters();
-            readAcquireTime();
-            updateParamsWithCalculations(scan_data);
-
-            getAttributes(pImage->pAttributeList);
-            addAttributesFromScan(pImage, scan_data);
-
-            doCallbacksGenericPointer(pImage, NDArrayData, 0);
-            pImage->release();
-
-            setIntegerParam(ADAcquire, 0);
-
-            callParamCallbacks();
-            unlock();
         }
     }
 
