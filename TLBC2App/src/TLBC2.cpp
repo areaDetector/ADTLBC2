@@ -478,8 +478,11 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
     void updateCounters()
     {
         epicsInt32 num_images;
+        epicsInt32 total_images;
         getIntegerParam(ADNumImagesCounter, &num_images);
         setIntegerParam(ADNumImagesCounter, num_images + 1);
+        getIntegerParam(NDArrayCounter, &total_images);
+        setIntegerParam(NDArrayCounter, total_images + 1);
     }
 
     void readAcquireTime() {
