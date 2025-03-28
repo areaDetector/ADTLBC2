@@ -20,4 +20,4 @@ tlbc2_registerRecordDeviceDriver(pdbbase)
 epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db;$(ADTLBC2)/db")
 
 TLBC2Config("$(PORT)", "$(MAX_IMAGE_WIDTH)", "$(MAX_IMAGE_HEIGHT)", 0, 0)
-dbLoadRecords("ADTLBC2.template", "P=$(PREFIX), R=cam1:, PORT=$(PORT), ADDR=0, TIMEOUT=1")
+dbLoadRecords("BC210CU.template", "P=$(PREFIX), R=cam1:, PORT=$(PORT), ADDR=0, TIMEOUT=1")

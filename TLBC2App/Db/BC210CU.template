@@ -1,0 +1,15 @@
+# Database for the records specific to the BC210CU detector
+#
+include "ADTLBC2.template"
+
+record("*", "$(P)$(R)AcquireTime") {
+    field(VAL, "0.1")
+    field(DRVL, "0.000028")
+    field(DRVH, "0.5")
+}
+
+record("*", "$(P)$(R)Wavelength") {
+    field(VAL, "245")
+    field(DRVL, "245")
+    field(DRVH, "400")
+}
