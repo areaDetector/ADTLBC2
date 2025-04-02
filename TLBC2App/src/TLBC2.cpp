@@ -148,9 +148,6 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value) override
     {
-        int acquiring;
-        getIntegerParam(ADAcquire, &acquiring);
-
         const int function = pasynUser->reason;
 
         auto item = params.find(function);
@@ -166,13 +163,27 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             callParamCallbacks();
             return status;
         } else if (function == ADAcquire) {
-            if (value && !acquiring) {
-                start_acquire_event.trigger();
-            } else if (!value && acquiring) {
-                stop_acquire_event.trigger();
+            int acquiring;
+            getIntegerParam(ADAcquire, &acquiring);
+            /* value == 0: stop acquisition
+             * value == 1: start acquisition */
+            if (!acquiring) {
+                if (value) {
+                    start_acquire_event.trigger();
+                } else {
+                    /* We are not acquiring and might have alarms set, so unset them */
+                    setParamAlarmSeverity(ADAcquire, epicsSevNone);
+                    setParamAlarmStatus(ADAcquire, epicsAlarmNone);
+                    setIntegerParam(ADStatus, ADStatusIdle);
+                    callParamCallbacks();
+                }
             } else {
-                return asynError;
+                /* Return error when trying to start an acquisition while we're currently acquiring */
+                if (value) return asynError;
+
+                stop_acquire_event.trigger();
             }
+
             /* Avoid calling ADDriver::writeInt32 so that we set ADAcquire only when
              * acquisition actually starts, and Acquire_RBV accurately reflects current state */
             return asynSuccess;
@@ -481,6 +492,11 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
             start_acquire_event.wait();
             lock();
 
+            /* Unset any potential alarms from the previous acquisition */
+            setParamAlarmSeverity(ADAcquire, epicsSevNone);
+            setParamAlarmStatus(ADAcquire, epicsAlarmNone);
+            callParamCallbacks();
+
             try {
                 do_acquisition();
             } catch (std::runtime_error &err) {
@@ -488,6 +504,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
                 asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s\n", err.what());
                 setIntegerParam(ADStatus, ADStatusError);
                 setStringParam(ADStatusMessage, err.what());
+                setParamAlarmSeverity(ADAcquire, epicsSevMajor);
+                setParamAlarmStatus(ADAcquire, epicsAlarmComm);
                 callParamCallbacks();
                 continue;
             }
