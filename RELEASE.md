@@ -1,7 +1,7 @@
 ADTLBC2 Release Notes
 =====================
 
-unreleased
+v1.0.0 (May 6, 2025)
 ----------
 
 * Multiple/Continuous acquisition mode support (ImageMode PV)
