@@ -605,6 +605,10 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         try {
             ViUInt16 left, top, width, height;
 
+            /* We observed that during IOC startup, get_roi returns only the Y
+             * values from the previously configured ROI, the X values are reset
+             * to 0 and MaxX. This means that users who wish to keep these
+             * values in sync must rely on autosave. */
             handle_tlbc2_err(TLBC2_get_roi(instr, &left, &top, &width, &height),
                              "get_roi");
 
