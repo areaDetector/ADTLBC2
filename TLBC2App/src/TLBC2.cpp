@@ -514,6 +514,8 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
 
     void handle_tlbc2_err(ViStatus err, std::string function)
     {
+        asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER,
+            "ADTLBC2: function %s returned %d\n", function.c_str(), (int)err);
         if (err == VI_SUCCESS)
             return;
 
