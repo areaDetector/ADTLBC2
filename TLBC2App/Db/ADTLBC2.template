@@ -28,19 +28,23 @@ record("*", "$(P)$(R)Gain") {
 }
 
 record("*", "$(P)$(R)MinX") {
-    field(PINI, "NO")
+    field(PINI, "YES")
+    field(PHAS, 2)
 }
 
 record("*", "$(P)$(R)MinY") {
-    field(PINI, "NO")
+    field(PINI, "YES")
+    field(PHAS, 2)
 }
 
 record("*", "$(P)$(R)SizeX") {
-    field(PINI, "NO")
+    field(PINI, "YES")
+    field(PHAS, 1)
 }
 
 record("*", "$(P)$(R)SizeY") {
-    field(PINI, "NO")
+    field(PINI, "YES")
+    field(PHAS, 1)
 }
 
 record("*", "$(P)$(R)TemperatureActual") {
