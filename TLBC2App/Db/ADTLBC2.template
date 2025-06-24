@@ -31,7 +31,7 @@ record("*", "$(P)$(R)MinX") {
     field(PINI, "NO")
 }
 
-record("*", "$(P)$(R)MinX") {
+record("*", "$(P)$(R)MinY") {
     field(PINI, "NO")
 }
 
