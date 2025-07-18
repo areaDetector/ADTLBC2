@@ -411,10 +411,18 @@ class epicsShareClass ADTLBC2: ADDriver, epicsThreadRunable {
         readAcquireTime();
         updateParamsWithCalculations(scan_data);
 
-        getAttributes(pImage->pAttributeList);
-        addAttributesFromScan(pImage, scan_data);
+        int arrayCallbacks;
+        getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
 
-        doCallbacksGenericPointer(pImage, NDArrayData, 0);
+        updateTimeStamps(pImage);
+
+        if (arrayCallbacks) {
+          getAttributes(pImage->pAttributeList);
+          addAttributesFromScan(pImage, scan_data);
+
+          doCallbacksGenericPointer(pImage, NDArrayData, 0);
+        }
+
         pImage->release();
 
         callParamCallbacks();
