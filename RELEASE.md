@@ -1,6 +1,18 @@
 ADTLBC2 Release Notes
 =====================
 
+v1.1.0 (October 8, 2025)
+----------
+
+* Add tracing to handle_tlbc2_err
+* Fix application of autosave for ROI:
+    - Fix typo to actually configure MinY
+    - Correct the restore order for Size{X,Y} and Min{X,Y}
+* Fulfill requirements of AreaDetector guidelines:
+    - ArrayCallbacks PV is now checked before forwarding arrays
+    - Timestamps are assigned to array as attributes
+* Autosave status PVs are now loaded in the iocsh template
+
 v1.0.0 (May 6, 2025)
 ----------
 
